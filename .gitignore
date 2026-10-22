@@ -1,0 +1,72 @@
+# Python & Environments
+pycache/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+.venv/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Jupyter & IDEs
+.ipynb_checkpoints/
+.vscode/
+.idea/
+*.swp
+
+# AWS & Security
+*.pem
+.env
+.aws/
+secrets.json
+credentials.yaml
+
+# Model Weights & Hugging Face
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.gguf
+.cache/
+models/
+adapters/
+huggingface/
+
+#Profiling Data & Sweeps
+*.csv
+*.parquet
+*.jsonl
+*.log
+data/
+results/
+sweeps/
+logs/
+
+# CUDA & Hardware Profiling 
+*.nsys-rep
+.sqlite
+core.
