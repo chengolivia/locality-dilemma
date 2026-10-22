@@ -1,0 +1,31 @@
+# =============================================================================
+# PyTorch & Hardware Acceleration
+# =============================================================================
+# On Mac:
+#   pip install -r requirements.txt (installs Apple Silicon / MPS compatible build)
+# On Amazon EC2 (NVIDIA GPU / CUDA 12.4):
+#   pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+#   pip install -r requirements.txt
+torch==2.6.0
+numpy>=1.26.4,<2.2.0
+
+# =============================================================================
+# Hugging Face Ecosystem & LoRA
+# =============================================================================
+transformers>=4.48.0,<=4.51.1
+peft==0.13.0
+accelerate>=1.0.0
+huggingface-hub>=0.25.0
+
+# =============================================================================
+# Data Aggregation, Analysis & Plotting
+# =============================================================================
+polars==1.8.0
+pandas>=2.2.0
+matplotlib>=3.8.0
+tabulate>=0.9.0
+
+# =============================================================================
+# Testing & Development
+# =============================================================================
+pytest>=8.3.0
