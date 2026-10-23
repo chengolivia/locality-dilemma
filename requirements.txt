@@ -1,5 +1,5 @@
 # =============================================================================
-# PyTorch & Hardware Acceleration
+# PyTorch & Core Acceleration
 # =============================================================================
 # On Mac:
 #   pip install -r requirements.txt (installs Apple Silicon / MPS compatible build)
@@ -8,6 +8,29 @@
 #   pip install -r requirements.txt
 torch==2.6.0
 numpy>=1.26.4,<2.2.0
+
+# =============================================================================
+# NVIDIA GPU Profiling, Telemetry & CUDA Runtimes (EC2 / Linux only)
+# Uses PEP 508 markers (sys_platform == 'linux') so `pip install -r requirements.txt`
+# installs them on Amazon EC2 while cleanly skipping them on macOS.
+# =============================================================================
+# GPU telemetry & PCIe diagnostics (NVML for PCIe link gen/width, memory, power)
+nvidia-ml-py; sys_platform == 'linux'
+pynvml>=11.5.0; sys_platform == 'linux'
+
+# Low-level CUDA driver/runtime bindings & NVTX markers for Nsight Systems profiling
+cuda-python; sys_platform == 'linux'
+nvtx; sys_platform == 'linux'
+
+# PyTorch Profiler / TensorBoard GPU trace & Kineto activity analyzer
+torch-tb-profiler>=0.4.3
+triton; sys_platform == 'linux'
+
+# CUDA 12 runtime, CUPTI profiling hooks, and accelerated libraries
+nvidia-cuda-runtime-cu12; sys_platform == 'linux'
+nvidia-cuda-cupti-cu12; sys_platform == 'linux'
+nvidia-cudnn-cu12; sys_platform == 'linux'
+nvidia-cublas-cu12; sys_platform == 'linux'
 
 # =============================================================================
 # Hugging Face Ecosystem & LoRA
