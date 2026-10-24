@@ -33,6 +33,7 @@ def main():
     out = Path(a.output_dir)
     out.mkdir(parents=True, exist_ok=True)
     group.to_csv(out / 'summary.csv', index=False)
+    
     pivot = group.pivot(index='lora_rank', columns='prefix_len', values='delta_ms').sort_index().sort_index(axis=1)
     fig, ax = plt.subplots(figsize=(9, 5))
     img = ax.imshow(pivot.to_numpy(), aspect='auto', cmap='coolwarm', interpolation='nearest')
@@ -45,6 +46,7 @@ def main():
     fig.tight_layout()
     fig.savefig(out / 'latency_heatmap.png', dpi=160)
     plt.close(fig)
+    
     # First interpolated sign change per rank, if measurements bracket an intersection.
     boundaries = []
     for rank, subset in group.groupby('lora_rank'):
