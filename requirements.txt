@@ -1,0 +1,54 @@
+# =============================================================================
+# PyTorch & Core Acceleration
+# =============================================================================
+# On Mac:
+#   pip install -r requirements.txt (installs Apple Silicon / MPS compatible build)
+# On Amazon EC2 (NVIDIA GPU / CUDA 12.4):
+#   pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
+#   pip install -r requirements.txt
+torch==2.6.0
+numpy>=1.26.4,<2.2.0
+
+# =============================================================================
+# NVIDIA GPU Profiling, Telemetry & CUDA Runtimes (EC2 / Linux only)
+# Uses PEP 508 markers (sys_platform == 'linux') so `pip install -r requirements.txt`
+# installs them on Amazon EC2 while cleanly skipping them on macOS.
+# =============================================================================
+# GPU telemetry & PCIe diagnostics (NVML for PCIe link gen/width, memory, power)
+nvidia-ml-py; sys_platform == 'linux'
+pynvml>=11.5.0; sys_platform == 'linux'
+
+# Low-level CUDA driver/runtime bindings & NVTX markers for Nsight Systems profiling
+cuda-python; sys_platform == 'linux'
+nvtx; sys_platform == 'linux'
+
+# PyTorch Profiler / TensorBoard GPU trace & Kineto activity analyzer
+torch-tb-profiler>=0.4.3
+triton; sys_platform == 'linux'
+
+# CUDA 12 runtime, CUPTI profiling hooks, and accelerated libraries
+nvidia-cuda-runtime-cu12; sys_platform == 'linux'
+nvidia-cuda-cupti-cu12; sys_platform == 'linux'
+nvidia-cudnn-cu12; sys_platform == 'linux'
+nvidia-cublas-cu12; sys_platform == 'linux'
+
+# =============================================================================
+# Hugging Face Ecosystem & LoRA
+# =============================================================================
+transformers>=4.48.0,<=4.51.1
+peft==0.13.0
+accelerate>=1.0.0
+huggingface-hub>=0.25.0
+
+# =============================================================================
+# Data Aggregation, Analysis & Plotting
+# =============================================================================
+polars==1.8.2
+pandas>=2.2.0
+matplotlib>=3.8.0
+tabulate>=0.9.0
+
+# =============================================================================
+# Testing & Development
+# =============================================================================
+pytest>=8.3.0
