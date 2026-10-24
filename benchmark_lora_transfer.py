@@ -40,7 +40,7 @@ import math
 import os
 import sys
 import time
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 
 # Prevent OpenMP / threading deadlocks on macOS
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
@@ -157,6 +157,18 @@ def parse_args() -> argparse.Namespace:
         help="Simulate execution on CPU (useful for syntax/flow testing on machines without CUDA).",
     )
     parser.add_argument(
+        "--adapters-dir",
+        type=str,
+        default=None,
+        help="Path to directory containing downloaded LoRA adapters (e.g. models/adapters from download_models.py).",
+    )
+    parser.add_argument(
+        "--adapter",
+        type=str,
+        default=None,
+        help="Path to a single downloaded LoRA adapter directory (e.g. models/adapters/repo__name).",
+    )
+    parser.add_argument(
         "--output-json",
         type=str,
         default=None,
@@ -215,6 +227,48 @@ def create_dummy_lora_state_dict(
             state_dict[key_b] = tensor_b
 
     return state_dict
+
+
+def load_real_peft_adapter(
+    adapter_path_str: str,
+    dtype: "torch.dtype",
+    pin_memory: bool = True,
+) -> Tuple[int, str, Dict[str, "torch.Tensor"]]:
+    """
+    Loads real PEFT LoRA adapter weights downloaded via download_models.py.
+    Returns (rank, adapter_name, state_dict).
+    """
+    from pathlib import Path
+    adapter_path = Path(adapter_path_str)
+    config_file = adapter_path / "adapter_config.json"
+    if not config_file.exists():
+        raise FileNotFoundError(f"Missing adapter_config.json in {adapter_path}")
+
+    with open(config_file, "r") as f:
+        config = json.load(f)
+
+    rank = config.get("r", 8)
+    adapter_name = adapter_path.name
+
+    safetensors_path = adapter_path / "adapter_model.safetensors"
+    bin_path = adapter_path / "adapter_model.bin"
+
+    state_dict = {}
+    if safetensors_path.exists():
+        from safetensors.torch import load_file
+        raw_dict = load_file(str(safetensors_path), device="cpu")
+    elif bin_path.exists():
+        raw_dict = torch.load(str(bin_path), map_location="cpu")
+    else:
+        raise FileNotFoundError(f"No adapter_model.safetensors or adapter_model.bin found in {adapter_path}")
+
+    for k, v in raw_dict.items():
+        t = v.to(dtype=dtype)
+        if pin_memory and torch.cuda.is_available():
+            t = t.pin_memory()
+        state_dict[k] = t
+
+    return rank, adapter_name, state_dict
 
 
 def calculate_state_dict_size(state_dict: Dict[str, "torch.Tensor"]) -> Tuple[int, float]:
@@ -368,6 +422,88 @@ def benchmark_rank_dryrun(
     return latencies_ms, compute_statistics(latencies_ms)
 
 
+def measure_t_swap(
+    rank: int,
+    hidden_dim: int = 4096,
+    num_layers: int = 32,
+    target_modules: Optional[List[str]] = None,
+    dtype: Optional["torch.dtype"] = None,
+    device: Optional[Union[str, "torch.device"]] = None,
+    iterations: int = 100,
+    warmup: int = 10,
+    pin_memory: bool = True,
+    transfer_mode: str = "to_device",
+    return_stats: bool = False,
+) -> Union[float, Tuple[float, Dict[str, float]]]:
+    """
+    Callable benchmark function: measure_t_swap(rank, hidden_dim).
+
+    Measures the PCIe Host-to-Device transfer latency (T_swap) in milliseconds
+    for loading a LoRA adapter with the specified rank and hidden_dim onto GPU.
+
+    Args:
+        rank: LoRA rank (e.g., 8, 16, 32, 64, 128).
+        hidden_dim: Model hidden dimension d_model (default: 4096).
+        num_layers: Number of transformer layers to simulate (default: 32).
+        target_modules: Projection names (default: ['q_proj', 'k_proj', 'v_proj', 'o_proj']).
+        dtype: PyTorch tensor dtype (default: float16 on CUDA, float32 on CPU).
+        device: Target CUDA device or 'cpu' (default: cuda:0 if available, else cpu).
+        iterations: Number of timed iterations (default: 100).
+        warmup: Number of untimed warmup iterations (default: 10).
+        pin_memory: Whether to pin host memory for DMA (default: True).
+        transfer_mode: 'to_device' or 'copy_preallocated' (default: 'to_device').
+        return_stats: If True, returns (median_ms, stats_dict). Otherwise returns median_ms as float.
+
+    Returns:
+        float: Median transfer latency T_swap in milliseconds.
+    """
+    if target_modules is None:
+        target_modules = ["q_proj", "k_proj", "v_proj", "o_proj"]
+
+    if device is None:
+        target_device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    elif isinstance(device, str):
+        target_device = torch.device(device)
+    else:
+        target_device = device
+
+    if dtype is None:
+        dtype = torch.float16 if target_device.type == "cuda" else torch.float32
+
+    # Generate state dict on host (CPU)
+    state_dict = create_dummy_lora_state_dict(
+        rank=rank,
+        num_layers=num_layers,
+        hidden_dim=hidden_dim,
+        target_modules=target_modules,
+        dtype=dtype,
+        pin_memory=(pin_memory and target_device.type == "cuda"),
+        device="cpu",
+    )
+
+    if target_device.type == "cuda":
+        torch.cuda.set_device(target_device)
+        _, stats = benchmark_rank_cuda(
+            cpu_state_dict=state_dict,
+            device=target_device,
+            iterations=iterations,
+            warmup=warmup,
+            pin_memory=pin_memory,
+            transfer_mode=transfer_mode,
+        )
+    else:
+        _, stats = benchmark_rank_dryrun(
+            cpu_state_dict=state_dict,
+            iterations=iterations,
+            warmup=warmup,
+        )
+
+    median_ms = stats["median"]
+    if return_stats:
+        return median_ms, stats
+    return median_ms
+
+
 def main():
     args = parse_args()
 
@@ -421,53 +557,112 @@ def main():
 
     benchmark_results = []
 
-    for rank in args.ranks:
-        print(f"[*] Benchmark LoRA Rank = {rank}", flush=True)
-        state_dict = create_dummy_lora_state_dict(
-            rank=rank,
-            num_layers=args.num_layers,
-            hidden_dim=args.hidden_dim,
-            target_modules=args.target_modules,
-            dtype=dtype,
-            pin_memory=args.pin_memory if not is_dry_run else False,
-            device="cpu",
-        )
+    # Check if testing downloaded real adapters from download_models.py
+    adapter_items = []
+    if args.adapter:
+        from pathlib import Path
+        p = Path(args.adapter)
+        if p.exists():
+            adapter_items.append((p.name, p))
+    elif args.adapters_dir:
+        from pathlib import Path
+        dir_path = Path(args.adapters_dir)
+        if dir_path.exists():
+            for p in sorted(dir_path.iterdir()):
+                if p.is_dir() and (p / "adapter_config.json").exists():
+                    adapter_items.append((p.name, p))
 
-        total_params, size_mb = calculate_state_dict_size(state_dict)
-        size_bytes = size_mb * (1024.0 * 1024.0)
-
-        print(f"    - Parameter Count:    {total_params:,}", flush=True)
-        print(f"    - Adapter Size:       {size_mb:.2f} MB", flush=True)
-        print(f"    - Profiling {args.warmup} warmup + {args.iterations} timed transfer iterations...", flush=True)
-
-        if not is_dry_run:
-            _, stats = benchmark_rank_cuda(
-                cpu_state_dict=state_dict,
-                device=device,
-                iterations=args.iterations,
-                warmup=args.warmup,
-                pin_memory=args.pin_memory,
-                transfer_mode=args.transfer_mode,
+    if adapter_items:
+        print(f"[*] Found {len(adapter_items)} real downloaded LoRA adapter(s) to benchmark.\n", flush=True)
+        for adapter_name, adapter_path in adapter_items:
+            print(f"[*] Benchmark Real Adapter: {adapter_name}", flush=True)
+            rank, _, state_dict = load_real_peft_adapter(
+                adapter_path_str=str(adapter_path),
+                dtype=dtype,
+                pin_memory=args.pin_memory if not is_dry_run else False,
             )
-        else:
-            _, stats = benchmark_rank_dryrun(
-                cpu_state_dict=state_dict,
-                iterations=args.iterations,
-                warmup=args.warmup,
+            total_params, size_mb = calculate_state_dict_size(state_dict)
+            size_bytes = size_mb * (1024.0 * 1024.0)
+            print(f"    - Inferred Rank:      {rank}", flush=True)
+            print(f"    - Parameter Count:    {total_params:,}", flush=True)
+            print(f"    - Adapter Size:       {size_mb:.2f} MB", flush=True)
+            print(f"    - Profiling {args.warmup} warmup + {args.iterations} timed transfer iterations...", flush=True)
+
+            if not is_dry_run:
+                _, stats = benchmark_rank_cuda(
+                    cpu_state_dict=state_dict,
+                    device=device,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                    pin_memory=args.pin_memory,
+                    transfer_mode=args.transfer_mode,
+                )
+            else:
+                _, stats = benchmark_rank_dryrun(
+                    cpu_state_dict=state_dict,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                )
+
+            median_ms = stats["median"]
+            median_sec = median_ms / 1000.0
+            effective_bandwidth = (size_bytes / median_sec) / 1e9 if median_sec > 0 else 0.0
+
+            stats["rank"] = rank
+            stats["adapter_name"] = adapter_name
+            stats["total_params"] = total_params
+            stats["size_mb"] = size_mb
+            stats["effective_bandwidth_gbps"] = effective_bandwidth
+            benchmark_results.append(stats)
+            print(f"    >> [{adapter_name}] Rank {rank:3d}: Median T_swap = {median_ms:.3f} ms | Bandwidth = {effective_bandwidth:.2f} GB/s\n", flush=True)
+    else:
+        for rank in args.ranks:
+            print(f"[*] Benchmark LoRA Rank = {rank}", flush=True)
+            state_dict = create_dummy_lora_state_dict(
+                rank=rank,
+                num_layers=args.num_layers,
+                hidden_dim=args.hidden_dim,
+                target_modules=args.target_modules,
+                dtype=dtype,
+                pin_memory=args.pin_memory if not is_dry_run else False,
+                device="cpu",
             )
 
-        # Calculate effective PCIe bandwidth in GB/s: Size (Bytes) / (T_swap in seconds) / 1e9
-        median_ms = stats["median"]
-        median_sec = median_ms / 1000.0
-        effective_bandwidth = (size_bytes / median_sec) / 1e9 if median_sec > 0 else 0.0
+            total_params, size_mb = calculate_state_dict_size(state_dict)
+            size_bytes = size_mb * (1024.0 * 1024.0)
 
-        stats["rank"] = rank
-        stats["total_params"] = total_params
-        stats["size_mb"] = size_mb
-        stats["effective_bandwidth_gbps"] = effective_bandwidth
-        benchmark_results.append(stats)
+            print(f"    - Parameter Count:    {total_params:,}", flush=True)
+            print(f"    - Adapter Size:       {size_mb:.2f} MB", flush=True)
+            print(f"    - Profiling {args.warmup} warmup + {args.iterations} timed transfer iterations...", flush=True)
 
-        print(f"    >> Rank {rank:3d}: Median T_swap = {median_ms:.3f} ms | Bandwidth = {effective_bandwidth:.2f} GB/s\n", flush=True)
+            if not is_dry_run:
+                _, stats = benchmark_rank_cuda(
+                    cpu_state_dict=state_dict,
+                    device=device,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                    pin_memory=args.pin_memory,
+                    transfer_mode=args.transfer_mode,
+                )
+            else:
+                _, stats = benchmark_rank_dryrun(
+                    cpu_state_dict=state_dict,
+                    iterations=args.iterations,
+                    warmup=args.warmup,
+                )
+
+            # Calculate effective PCIe bandwidth in GB/s: Size (Bytes) / (T_swap in seconds) / 1e9
+            median_ms = stats["median"]
+            median_sec = median_ms / 1000.0
+            effective_bandwidth = (size_bytes / median_sec) / 1e9 if median_sec > 0 else 0.0
+
+            stats["rank"] = rank
+            stats["total_params"] = total_params
+            stats["size_mb"] = size_mb
+            stats["effective_bandwidth_gbps"] = effective_bandwidth
+            benchmark_results.append(stats)
+
+            print(f"    >> Rank {rank:3d}: Median T_swap = {median_ms:.3f} ms | Bandwidth = {effective_bandwidth:.2f} GB/s\n", flush=True)
 
     # -------------------------------------------------------------------------
     # Summary Table Output
