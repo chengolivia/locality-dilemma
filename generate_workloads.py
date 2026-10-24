@@ -8,7 +8,7 @@ from pathlib import Path
 def main():
     p = argparse.ArgumentParser()
     p.add_argument('--tokenizer', default='models/base', help='Local base directory or HF model ID')
-    p.add_argument('--lengths', type=int, nargs='+', default=[128, 256, 512, 1024, 2048])
+    p.add_argument('--lengths', type=int, nargs='+', default=[128, 256, 512, 1024, 2048, 4096, 8192])
     p.add_argument('--repeats', type=int, default=3)
     p.add_argument('--output', default='data/workloads.jsonl')
     a = p.parse_args()

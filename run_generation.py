@@ -12,9 +12,9 @@ def main():
     p.add_argument('--workloads', default='data/workloads.jsonl')
     p.add_argument('--output', default='results/generations.jsonl')
     p.add_argument('--adapter', help='Optional local LoRA adapter directory')
-    p.add_argument('--max-model-len', type=int, default=4096)
+    p.add_argument('--max-model-len', type=int, default=8192)
     p.add_argument('--max-tokens', type=int, default=16)
-    p.add_argument('--max-lora-rank', type=int, default=64)
+    p.add_argument('--max-lora-rank', type=int, default=128)
     p.add_argument('--limit', type=int, default=5)
     a = p.parse_args()
     from vllm import LLM, SamplingParams
