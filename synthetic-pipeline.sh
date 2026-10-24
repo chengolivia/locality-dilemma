@@ -25,36 +25,55 @@ if [[ -z "${PYTHON:-}" ]]; then
     fi
 fi
 
-# Ensure output directory exists
-mkdir -p results results/analysis
-
-# Parse optional arguments (e.g. --dry-run, --full-grid, or --help)
+# Parse optional arguments (e.g. --dry-run, --full-grid, --output-dir, or --help)
 DRY_RUN_FLAG=""
 FULL_GRID=false
+OUTPUT_DIR="results"
 
-for arg in "$@"; do
-    case "$arg" in
+while [[ $# -gt 0 ]]; do
+    case "$1" in
         -h|--help)
-            echo "Usage: $(basename "$0") [--dry-run] [--full-grid]"
+            echo "Usage: $(basename "$0") [OPTIONS]"
             echo ""
             echo "Parameter Grids:"
             echo "  LoRA Ranks (r):       8, 16, 32, 64, 128"
             echo "  Context Lengths (L):  128, 256, 512, 1024, 2048, 4096, 8192"
             echo ""
             echo "Options:"
-            echo "  --dry-run    Run fast lightweight CPU simulation (for testing on Mac)"
-            echo "  --full-grid  Run full parameter grids (all 35 combinations) even during dry-run"
-            echo "  -h, --help   Show this help message and exit"
+            echo "  -d, --dry-run          Run fast lightweight CPU simulation (for testing on Mac)"
+            echo "      --full-grid        Run full parameter grids (all 35 combinations) even during dry-run"
+            echo "  -o, --output-dir <dir> Output directory to store results (default: results; overwrites files in that dir)"
+            echo "  -h, --help             Show this help message and exit"
             exit 0
             ;;
-        --dry-run)
+        -d|--dry-run)
             DRY_RUN_FLAG="--dry-run"
+            shift
             ;;
         --full-grid)
             FULL_GRID=true
+            shift
+            ;;
+        -o|--output-dir)
+            OUTPUT_DIR="$2"
+            shift 2
+            ;;
+        *)
+            echo "Error: Unknown argument '$1'" >&2
+            echo "Run '$(basename "$0") --help' for usage." >&2
+            exit 1
             ;;
     esac
 done
+
+# Output file paths
+ANALYSIS_DIR="${OUTPUT_DIR}/analysis"
+SWAP_CSV="${OUTPUT_DIR}/swap.csv"
+PREFILL_CSV="${OUTPUT_DIR}/prefill.csv"
+TIMINGS_CSV="${OUTPUT_DIR}/timings.csv"
+
+# Ensure output directory exists
+mkdir -p "$OUTPUT_DIR" "$ANALYSIS_DIR"
 
 if [[ -n "$DRY_RUN_FLAG" ]]; then
     echo "=============================================================================="
@@ -71,7 +90,7 @@ echo " Target Parameter Grids:"
 echo "   LoRA Ranks (r):         8, 16, 32, 64, 128"
 echo "   Context Lengths (L):    128, 256, 512, 1024, 2048, 4096, 8192"
 echo "=============================================================================="
-echo "Output Directory: results/"
+echo "Output Directory: ${OUTPUT_DIR}/"
 echo
 
 # ------------------------------------------------------------------------------
@@ -84,7 +103,7 @@ if [[ -n "$DRY_RUN_FLAG" && "$FULL_GRID" == false ]]; then
         --ranks 8 16 \
         --iterations 5 \
         --warmup 2 \
-        --output-csv results/swap.csv
+        --output-csv "$SWAP_CSV"
 else
     EXTRA_FLAGS=()
     if [[ -n "$DRY_RUN_FLAG" ]]; then
@@ -95,14 +114,14 @@ else
     "$PYTHON" benchmark_lora_transfer.py \
         --ranks 8 16 32 64 128 \
         "${EXTRA_FLAGS[@]}" \
-        --output-csv results/swap.csv
+        --output-csv "$SWAP_CSV"
 fi
-echo ">>> Step 1 Complete: results/swap.csv generated."
+echo ">>> Step 1 Complete: $SWAP_CSV generated."
 echo
 
 # ------------------------------------------------------------------------------
 # Step 2: Benchmark forward prefill latency (Delta T_prefill) across context lengths
-#         and pair with T_swap into results/timings.csv
+#         and pair with T_swap into timings.csv
 # ------------------------------------------------------------------------------
 echo ">>> [Step 2/3] Benchmarking Forward Prefill Latency (Delta T_prefill)..."
 if [[ -n "$DRY_RUN_FLAG" && "$FULL_GRID" == false ]]; then
@@ -111,9 +130,9 @@ if [[ -n "$DRY_RUN_FLAG" && "$FULL_GRID" == false ]]; then
         --context-lengths 128 256 \
         --iterations 5 \
         --warmup 2 \
-        --swap-csv results/swap.csv \
-        --export-timings results/timings.csv \
-        --output-csv results/prefill.csv
+        --swap-csv "$SWAP_CSV" \
+        --export-timings "$TIMINGS_CSV" \
+        --output-csv "$PREFILL_CSV"
 else
     EXTRA_FLAGS=()
     if [[ -n "$DRY_RUN_FLAG" ]]; then
@@ -124,11 +143,11 @@ else
     "$PYTHON" benchmark_prefill_latency.py \
         --context-lengths 128 256 512 1024 2048 4096 8192 \
         "${EXTRA_FLAGS[@]}" \
-        --swap-csv results/swap.csv \
-        --export-timings results/timings.csv \
-        --output-csv results/prefill.csv
+        --swap-csv "$SWAP_CSV" \
+        --export-timings "$TIMINGS_CSV" \
+        --output-csv "$PREFILL_CSV"
 fi
-echo ">>> Step 2 Complete: results/prefill.csv and results/timings.csv generated."
+echo ">>> Step 2 Complete: $PREFILL_CSV and $TIMINGS_CSV generated."
 echo
 
 # ------------------------------------------------------------------------------
@@ -136,17 +155,17 @@ echo
 # ------------------------------------------------------------------------------
 echo ">>> [Step 3/3] Running Pareto Frontier Analysis (analyze_results.py)..."
 "$PYTHON" analyze_results.py \
-    --input results/timings.csv \
-    --output-dir results/analysis
+    --input "$TIMINGS_CSV" \
+    --output-dir "$ANALYSIS_DIR"
 
 echo
 echo "=============================================================================="
 echo " Pipeline Complete!"
-echo "  - Swap Latencies:   results/swap.csv"
-echo "  - Prefill Latency:  results/prefill.csv"
-echo "  - Paired Timings:   results/timings.csv"
-echo "  - Pareto Analysis:  results/analysis/summary.csv"
-echo "  - Break-Even Curve: results/analysis/break_even.csv"
-echo "  - Heatmap Plot:     results/analysis/latency_heatmap.png"
+echo "  - Swap Latencies:   $SWAP_CSV"
+echo "  - Prefill Latency:  $PREFILL_CSV"
+echo "  - Paired Timings:   $TIMINGS_CSV"
+echo "  - Pareto Analysis:  ${ANALYSIS_DIR}/summary.csv"
+echo "  - Break-Even Curve: ${ANALYSIS_DIR}/break_even.csv"
+echo "  - Heatmap Plot:     ${ANALYSIS_DIR}/latency_heatmap.png"
 echo "=============================================================================="
 
