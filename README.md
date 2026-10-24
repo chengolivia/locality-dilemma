@@ -27,48 +27,85 @@ pip install torch==2.6.0 --index-url https://download.pytorch.org/whl/cu124
 pip install -r requirements.txt
 ```
 
-<!--
 ---
 
-## Running the Benchmark
+## Pipelines & Benchmarking
 
-### Basic Run
-Profiles ranks 8, 16, 32, 64, and 128 (100 iterations each):
+### Parameter Grids & Evaluation Matrix
+
+All pipeline harnesses evaluate across the full parameter space ($5 \times 7 = 35$ paired evaluations):
+- **LoRA Adapter Ranks ($r$)**: `[8, 16, 32, 64, 128]`
+- **Prefix / Context Lengths ($L$)**: `[128, 256, 512, 1024, 2048, 4096, 8192]`
+
+### 1. Synthetic Pipeline (Recommended for Initial Profiling)
+Evaluates synthetic LoRA ranks ($r \in [8, 16, 32, 64, 128]$) and forward prefill latencies ($L \in [128, \dots, 8192]$) on randomly weighted Mistral architecture. **Requires NO model downloads or Hugging Face credentials.**
+
 ```bash
-python benchmark_lora_transfer.py
+# Run complete synthetic pipeline on NVIDIA GPU (all 35 combinations)
+./synthetic-pipeline.sh
+
+# Run CPU dry-run on macOS for quick sanity check
+./synthetic-pipeline.sh --dry-run
+
+# Run full 35-point grid even during dry-run
+./synthetic-pipeline.sh --dry-run --full-grid
 ```
 
-### Dry Run on CPU (Mac Testing)
-Verify script logic and formatting on a machine without a CUDA GPU:
+### 2. Unified Pipeline (`run_pipeline.sh`)
+Supports both synthetic profiling and real downloaded weights/workloads:
+
 ```bash
-python benchmark_lora_transfer.py --dry-run
+# Synthetic mode on GPU
+./run_pipeline.sh --mode synthetic
+
+# Real mode using downloaded weights and PEFT adapters
+./run_pipeline.sh --mode real \
+    --model models/base \
+    --adapters-dir models/adapters \
+    --workloads data/workloads.jsonl
+
+# Quick dry-run smoke test
+./run_pipeline.sh --dry-run
 ```
 
-### Full Configuration Example
-Simulate all 7 linear projections (Attention + MLP) with JSON and CSV exports:
+### 3. Real Adapter Pipeline (`real-pipeline.sh`)
+Shortcut for running the real-model pipeline:
 ```bash
-python benchmark_lora_transfer.py \
-    --ranks 8 16 32 64 128 \
-    --num-layers 32 \
-    --hidden-dim 4096 \
-    --target-modules q_proj k_proj v_proj o_proj gate_proj up_proj down_proj \
-    --dtype float16 \
-    --iterations 100 \
-    --warmup 15 \
-    --output-json results.json \
-    --output-csv results.csv
+./real-pipeline.sh
 ```
 
-### Comparing Memory Modes
+---
+
+## Callable API
+
+Both benchmarking harnesses can be imported directly into Python scripts:
+
+### LoRA Host-to-Device Swap Latency
+```python
+from benchmark_lora_transfer import measure_t_swap
+
+# Returns median swap latency in milliseconds (float)
+t_swap = measure_t_swap(rank=16, hidden_dim=4096, num_layers=32)
+print(f"LoRA Rank 16 swap latency: {t_swap:.3f} ms")
+```
+
+### Forward Prefill Compute Latency
+```python
+from benchmark_prefill_latency import measure_t_prefill, load_mistral_classes, create_or_load_mistral_model
+
+MistralConfig, MistralForCausalLM = load_mistral_classes()
+model, _ = create_or_load_mistral_model(MistralConfig, MistralForCausalLM, model_path=None)
+
+# Returns median forward-pass prefill latency in milliseconds (float)
+t_prefill = measure_t_prefill(model, context_length=2048)
+print(f"Prefill latency (L=2048): {t_prefill:.3f} ms")
+```
+
+---
+
+## Running Unit Tests
 ```bash
-# Pinned memory (fast PCIe DMA transfer)
-python benchmark_lora_transfer.py --pin-memory
-
-# Pageable memory (subject to OS staging buffer overhead)
-python benchmark_lora_transfer.py --no-pin-memory
-
-# In-place pre-allocated buffer transfer (eliminates allocator overhead)
-python benchmark_lora_transfer.py --transfer-mode copy_preallocated
+pytest tests/test_benchmarks.py -v
 ```
 
 ---
@@ -83,7 +120,6 @@ For 16-bit precision (`torch.float16` or `torch.bfloat16`, 2 bytes/param):
 
 $$\text{Size (Bytes)} = \text{Parameters}(r) \times 2$$
 
-The effective PCIe transfer bandwidth is calculated from the measured median swap time $T_{swap}$:
+The effective PCIe transfer bandwidth is calculated from the measured median swap time $T_{\text{swap}}$:
 
-$$\text{Effective Bandwidth (GB/s)} = \frac{\text{Size (Bytes)}}{T_{swap} \times 10^6}$$
--->
+$$\text{Effective Bandwidth (GB/s)} = \frac{\text{Size (Bytes)}}{T_{\text{swap}} \times 10^6}$$
