@@ -1,0 +1,301 @@
+{
+  "source_repository": "https://github.com/TheAgentCompany/experiments",
+  "source_commit": null,
+  "source_run": "20250510_OpenHands-0.28.1-sonnet-20250219",
+  "base_model": "mistralai/Mistral-7B-v0.1",
+  "selection_version": "workplace20-v1",
+  "selection": "Purposive, role-stratified 20-task sample: four tasks per functional role; not a random or population-representative sample.",
+  "role_definition": "Dominant activity inferred from recorded task instructions, not the dataset's department label.",
+  "adapter_assignment": "Constructed serving proxy; fixed per trajectory; task quality not established.",
+  "task_balance": "Four tasks per role. Requests, tokens, and retained requests need not be balanced.",
+  "limitations": [
+    "Recorded events are not verified original model inputs.",
+    "Images are omitted and event history is reconstructed without the original agent's history-management policy.",
+    "Arrival times and cross-task interleaving are constructed.",
+    "No cross-adapter KV reuse is assumed.",
+    "Hardware feasibility and KV-hit counts must be validated independently.",
+    "Adapter role matches are approximate and do not imply autonomous task competence."
+  ],
+  "tasks": [
+    {
+      "task_id": "sde-migrate-package-manager",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Migrate dependency management and CI commands.",
+      "assignment_limitations": "Code generation specialization does not establish full agent/tool competence.",
+      "source_department": "sde",
+      "recorded_agent_actions": 7,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-migrate-package-manager-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tYour task is to migrate the Sotopia (http://the-agent-company.com:8929/root/sotopia) repository's dependency management system from poetry (https://python-poetry.org/) to UV (https://github.com/astral-sh/uv).\n     2\t\n     3\tThis involves:\n     4\t1. Updating all GitHub workflow files to use UV instead of poetry for dependency management\n     5\t2. Updating documentation files to reflect the change in package manager\n     6\t3. Ensuring all commands and instructions are updated to use UV syntax\n     7\tThere's no need to update anything on GitLab. Just clone the repository to `/workspace` folder and make changes locally.\n     8\t\n     9\tThe migration should maintain all existing functionality while taking advantage of UV's improved performance.\n"
+      ]
+    },
+    {
+      "task_id": "sde-write-a-unit-test-for-scroll_down-function",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Write a targeted unit test in an existing repository.",
+      "assignment_limitations": "Code generation specialization does not establish full agent/tool competence.",
+      "source_department": "sde",
+      "recorded_agent_actions": 16,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-write-a-unit-test-for-scroll_down-function-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to the openhands's gitlab at http://the-agent-company.com:8929/root/openhands\n     2\t\n     3\t* Clone the git repository to the /workspace directory and set up Poetry package management\n     4\t* find function scroll_down in the file /workspace/openhands/openhands/runtime/plugins/agent_skills/file_ops/file_ops.py\n     5\t* write a unit test named 'test_scroll_down' in the file /workspace/openhands/tests/unit/test_agent_skill.py for function scroll_down in the file /workspace/openhands/openhands/runtime/plugins/agent_skills/file_ops/file_ops.py \n     6\t\n"
+      ]
+    },
+    {
+      "task_id": "sde-debug-crashed-server",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Diagnose and fix a server crash; intentionally retain a long trajectory.",
+      "assignment_limitations": "Code generation specialization does not establish full agent/tool competence.",
+      "source_department": "sde",
+      "recorded_agent_actions": 100,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-debug-crashed-server-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tThe server for our event viewer web app seems to be crashing, can you please find the cause and fix it?\n     2\t\n     3\tYou'll need to open the code (Emily can give you credentials for access via RocketChat at http://the-agent-company.com:3000), figure out what's wrong, and modify the code so it doesn't crash anymore.\n     4\t\n     5\tWhen you're done, please leave the server running in the background on your local machine so we can test it.\n     6\t\n"
+      ]
+    },
+    {
+      "task_id": "sde-implement-hyperloglog",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Implement an algorithm across C++ files; intentionally retain a long trajectory.",
+      "assignment_limitations": "Code generation specialization does not establish full agent/tool competence.",
+      "source_department": "sde",
+      "recorded_agent_actions": 100,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-implement-hyperloglog-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tClone http://the-agent-company.com:8929/root/bustub to /workspace folder and complete http://the-agent-company.com:8929/root/bustub/-/issues/759 locally. Specifically, complete 4 files: \n     2\t- \"bustub/src/include/primer/hyperloglog.h\",\n     3\t- \"bustub/src/include/primer/hyperloglog_presto.h\",\n     4\t- \"bustub/src/primer/hyperloglog.cpp\",\n     5\t- \"bustub/src/primer/hyperloglog_presto.cpp\",\n     6\t\n     7\tTo ensure compatibility of testing across different operating systems, please change the line \"hash = ((hash << 5) ^ (hash >> 27)) ^ bytes[i];\" in your local file \"src/include/common/util/hash_util.h\" to \"hash = ((hash << 5) ^ (hash >> 27)) ^ static_cast<signed char>(bytes[i]);\"\n     8\t\n"
+      ]
+    },
+    {
+      "task_id": "ds-sql-exercise",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Query product counts, categories, and highest prices.",
+      "assignment_limitations": "WikiSQL is table/question SQL generation; database administration, dialect differences, retrieval and tool use are out of its documented task.",
+      "source_department": "ds",
+      "recorded_agent_actions": 14,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_ds-sql-exercise-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tAs our first data scientist intern, we designed a simple SQL exercise for you to help you get your hands dirty.\n     2\t\n     3\tYou are provided with a SQL database containing product data. Write three SQL queries to analyze the data and write the answer in 3 txt files, one for each task (file names should be task1.txt, task2.txt, task3.txt, respectively). The txt files should be placed under `/workspace` directory. The exercise database is located at /data/database.db. You can access it using the SQLite command line tool.\n     4\t\n     5\tTask 1: Find the total number of products in the database\n     6\tTask 2: Find how many different product categories exist\n     7\tTask 3: Find the top 3 most expensive products in the Electronics category. Show only product name and price in each line (e.g. \n     8\t\"A\", 123.45,\n     9\t\"B\", 12.34,\n    10\t\"C\", 1.23\n    11\t) with two digits\n"
+      ]
+    },
+    {
+      "task_id": "ds-coffee-shop-database-management",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Create SQLite tables/views and answer sales/inventory questions.",
+      "assignment_limitations": "WikiSQL is table/question SQL generation; database administration, dialect differences, retrieval and tool use are out of its documented task.",
+      "source_department": "ds",
+      "recorded_agent_actions": 41,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_ds-coffee-shop-database-management-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tOne of our clients is a coffee shop chain and they require your help as a database analyst . The company has provided you with csv files that are uploaded on OwnCloud under 'Documents/Data Analysis/Coffee Shop'. You will need to download the csv files to the workspace directory and create a table for each of these csv files making sure of the following details : the sqlite database should be created in /data/coffee_shop.db, the table names should match the csv file names and the column names should exactly match the columns in the csv files. You will then need to create 2 views. First, v_short_stock with the columns 'product_id', 'quantity_in_stock' and 'reorder_point' that contain only the products which should be reordered. Second, view v_sales with the columns 'product_id', 'average_sales', 'revenue_generated' and 'profit_generated' that contain sales details for each product. When creating tables and views, round floating point numbers to 2 decimal points. Finally, you need to download the analysis.txt file from OwnCloud to the workspace. You can find it at the same location as the csv files. You need to replace <ANSWER HERE> with the correct answers in the analysis.txt file.\n     2\t\n     3\tOwnCloud can be accessed at: http://the-agent-company.com:8092\n     4\t\n"
+      ]
+    },
+    {
+      "task_id": "sde-create-sqlite-database",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Populate a relational schema from a financial report.",
+      "assignment_limitations": "WikiSQL is table/question SQL generation; database administration, dialect differences, retrieval and tool use are out of its documented task.",
+      "source_department": "sde",
+      "recorded_agent_actions": 20,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-create-sqlite-database-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tOn our office cloud at http://the-agent-company.com:8092/, find the July-Sep 2024\n     2\tfinancial report for our company, and create a SQLite database with two tables that\n     3\tappropriately populates the data in the report:\n     4\t\n     5\t- financial_categories\n     6\t- financial_details\n     7\t\n     8\tThe financial_categories table has the following columns:\n     9\t\n    10\t- category_id\n    11\t- category_name\n    12\t- category_type\n    13\t\n    14\tThe financial_details table has the following columns:\n    15\t\n    16\t- detail_id\n    17\t- category_id\n    18\t- month (strings in the format YYYY-MM)\n    19\t- actual\n    20\t- budget\n    21\t- variance\n    22\t- percent_of_budget\n    23\t\n    24\tThe SQLite database should be named \"financial_report.db\".\n    25\t\n"
+      ]
+    },
+    {
+      "task_id": "sde-run-rising-wave-locally",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Follow a database quick start including table creation and SQL queries; includes setup.",
+      "assignment_limitations": "WikiSQL is table/question SQL generation; database administration, dialect differences, retrieval and tool use are out of its documented task.",
+      "source_department": "sde",
+      "recorded_agent_actions": 43,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-run-rising-wave-locally-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to owncloud: http://the-agent-company.com:8092 and find Quick_start_RisingWave.pdf.\n     2\t\n     3\tInstall and start Rising Wave locally by following the command in the wiki page above. Assume psql is already installed.\n     4\tInstall risingwave under the /workspace directory. You may have to use /workspace/risingwave command to start the \n     5\tprogram locally.\n     6\t\n     7\tRun Rising Wave, create table and insert some data. You must follow the example table\n     8\tand data in the wiki Step 3: Insert some data and Step 4: Analyze and query data. Follow all of the steps until the very end\n     9\tso the average_exam_scores table is available and has the same data as the example has. You can ignore possible issue with\n    10\tnumerical precision as long as they are identical to the second decimal.\n    11\t\n    12\tClose the connection after inserting the data.\n"
+      ]
+    },
+    {
+      "task_id": "ds-answer-numerical-data-question",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Rank beverage frequencies and compute averages from spreadsheet data.",
+      "assignment_limitations": "GSM8K is grade-school word-problem math; spreadsheet/finance domains and agent tool use are transferred, unvalidated settings.",
+      "source_department": "ds",
+      "recorded_agent_actions": 15,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_ds-answer-numerical-data-question-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tOne of our clients doing beverage-related commercials has requested us to conduct this data analysis for them.\n     2\tSpecifically, find the `beverage_stats.xlsx` under `Documents/Data Analysis` in cloud drive, and answer the following questions:\n     3\t\n     4\t1. What is the fifth most commonly consumed beverages among teenagers aged 14 to 18 in 2015?\n     5\t2. what is the average percentage of children and teenagers drinking water in 2015?\n     6\t3. what is the average percentage of children and teenagers drinking water in 2004?\n     7\t\n     8\tAnswer each question with a short phrase and separate answers by lines.\n     9\tWrite the responses to `/workspace/answer.docx` for ease of future revision.\n    10\t\n    11\tHere are the links for your reference:\n    12\tCloud Drive: http://the-agent-company.com:8092\n"
+      ]
+    },
+    {
+      "task_id": "admin-collect-requests-and-compute-total-price",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Collect quantities and prices and calculate equipment costs.",
+      "assignment_limitations": "GSM8K is grade-school word-problem math; spreadsheet/finance domains and agent tool use are transferred, unvalidated settings.",
+      "source_department": "admin",
+      "recorded_agent_actions": 58,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_admin-collect-requests-and-compute-total-price-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\t1. Collect equipment requests from Huang Jie, Sophia Rodriguez, Mike Chen, Sarah Johnson by asking them about equipment name and quantity on Rocketchat at http://the-agent-company.com:3000/home\n     2\t2. Retrieve prices from 'Documents/Administrative Specialist/products.pdf' on owncloud(http://the-agent-company.com:8092)\n     3\t3. Calculate total costs and write down /workspace/result.txt\n     4\t\n"
+      ]
+    },
+    {
+      "task_id": "finance-budget-variance",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Calculate budget variance amounts/percentages and apply thresholds.",
+      "assignment_limitations": "GSM8K is grade-school word-problem math; spreadsheet/finance domains and agent tool use are transferred, unvalidated settings.",
+      "source_department": "finance",
+      "recorded_agent_actions": 24,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_finance-budget-variance-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to owncloud at http://the-agent-company.com:8092. \n     2\t* According to data files listed below, analyze actual spending against budgeted amounts across all departments and categories, identifying significant variances.\n     3\t    * /Documents/Financials/budget.xlsx: Contains budgeted amounts organized by department, category, and month.\n     4\t    * /Documents/Financials/actual_spending.xlsx: Contains actual spending data.\n     5\t* Compare actual spending against budgeted amounts for each department, category, and month.\n     6\t* Calculate the variance amount and percentage for each department/category/month combination.\n     7\t* Flag variances that are greater than both 10% of the budgeted amount and $5,000.\n     8\t* Adjust for any identified seasonal spending variations to ensure accurate comparisons.\n     9\t* Create an Excel file at /Documents/Financials/flagged_variances.xlsx with a column titled Flagged_Variances. This column should contain unique identifiers for each significant variance, in the format Department_Category_YYYYMM\n"
+      ]
+    },
+    {
+      "task_id": "finance-check-attendance-payroll",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Aggregate hours, apply rounding, and calculate earnings.",
+      "assignment_limitations": "GSM8K is grade-school word-problem math; spreadsheet/finance domains and agent tool use are transferred, unvalidated settings.",
+      "source_department": "finance",
+      "recorded_agent_actions": 24,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_finance-check-attendance-payroll-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to owncloud at http://the-agent-company.com:8092.\n     2\t\n     3\t* Use the provided \"april-attendance-data.csv\" spreadsheet in owncloud's \"Documents/Human Resources Team/Attendance\" folder, and the pay rates information in \"salary-rates.pdf\" file in the same folder to calculate the total earnings for each employee based on the number of hours that they have worked in total. \n     4\t\n     5\t* We want to be generous and round up their total work hours to the next nearest integer value. However, be careful not to round up their work hour for each individual day. Only round up the total.\n     6\t\n     7\t* Create a report called \"april-payroll.xlsx\" in the local /workspace directory. You must make sure that it is a xlsx file.\n     8\t\n     9\t* In the report, have columns with names 'Name' and 'Total Earnings'.\n"
+      ]
+    },
+    {
+      "task_id": "research-answer-questions-on-paper",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Answer questions grounded in a research paper.",
+      "assignment_limitations": "DROP Explained is passage QA with explanations; research, finance and HR extraction/template editing are transferred, unvalidated settings.",
+      "source_department": "research",
+      "recorded_agent_actions": 25,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_research-answer-questions-on-paper-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tYou need to download the research paper 'noise_simulation_paper.pdf' and the analysis sheet 'noise_simulation_analysis_sheet.txt' from owncloud under the Documents/Research/Noise Simulation/ folder and place them in the workspace directory. Then you need to answer the questions in the analysis sheet using the research paper. Replace the <ANSWER HERE> placeholders with your answer. In order for the evaluator to work properly you must ensure that the answer to each question is placed in the same line as the question and should not extend to a new line.\n     2\t\n     3\tOwnCloud can be accessed at: http://the-agent-company.com:8092\n"
+      ]
+    },
+    {
+      "task_id": "finance-find-signatories",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Extract signatory names, titles, companies, and dates from annual reports.",
+      "assignment_limitations": "DROP Explained is passage QA with explanations; research, finance and HR extraction/template editing are transferred, unvalidated settings.",
+      "source_department": "finance",
+      "recorded_agent_actions": 37,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_finance-find-signatories-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to the Rocketchat website at http://the-agent-company.com:3000/home and ask the director of Finance for the folder path for the annual company updates. You can navigate to the path provided through Owncloud, using this link http://the-agent-company.com:8092/\n     2\tOnce you have navigated to OwnCloud and to the annual company updates, find the Amazon reports and the Alphabet report. Your job is to create a CSV table of all the signatures within these reports. \n     3\tThe CSV table should have the following columns:\n     4\tname (of the signatory), title, company (excluding business entity designators or legal identifiers) and date (of signature in YYYY-MM-DD format). Save this file as 'signatories.csv' in the '/workspace' folder.\n     5\t\n     6\tThe company will need to reach out to the people on this list to sell our financial products. Reach out to the director of sales providing this table. Include the path of where the csv is saved and tell the director of sales how many people we need to reach out to.\n     7\t\n"
+      ]
+    },
+    {
+      "task_id": "hr-organize-talent-info",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Extract candidate education, skills, and experience from resumes.",
+      "assignment_limitations": "DROP Explained is passage QA with explanations; research, finance and HR extraction/template editing are transferred, unvalidated settings.",
+      "source_department": "hr",
+      "recorded_agent_actions": 18,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_hr-organize-talent-info-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tEmily Johnson, Michael Davis, and Sarah Thompson, whose resumes are located in Documents/Human Resources Team/resumes on owncloud(http://the-agent-company.com:8092)\n     2\t\n     3\tExtract the name, education information, skills and past work experiences of each candidate, and organize them in a document at `/workspace/summary.csv`.\n"
+      ]
+    },
+    {
+      "task_id": "hr-populate-salary-increase-memo",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Extract structured employee fields and populate memo templates.",
+      "assignment_limitations": "DROP Explained is passage QA with explanations; research, finance and HR extraction/template editing are transferred, unvalidated settings.",
+      "source_department": "hr",
+      "recorded_agent_actions": 25,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_hr-populate-salary-increase-memo-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tNavigate to owncloud at http://the-agent-company.com:8092. Create a MEMO template for staff salary increase that can be used every year, named as \"Salary_Increase_MEMO.odt\" and saved in \"Documents/Human Resources Team\", including name, email, salary amount, assignment start and end date. Populate the MEMO information from the salary_increase.txt in \"Documents/Human Resources Team\" for each of the employees. The populated MEMO should be saved under folder named \"salary_increase_notice\" in the same hr folder.\n     2\t\n"
+      ]
+    },
+    {
+      "task_id": "sde-summarize-recent-issues",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Summarize recent issues and their discussions.",
+      "assignment_limitations": "CNN is news summarization; issue summaries, project metrics, presentation synthesis and agent tool use are transferred, unvalidated settings.",
+      "source_department": "sde",
+      "recorded_agent_actions": 17,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_sde-summarize-recent-issues-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tFind all open issues on this gitlab repo http://the-agent-company.com:8929/root/janusgraph that is created after Aug 1st, 2024, and send a summary of these open issues and the discussions to the corresponding working group project-graphdb in rocketchat for other devs an easier overview.\n     2\t\n     3\tYou could find the RocketChat website at http://the-agent-company.com:3000/\n"
+      ]
+    },
+    {
+      "task_id": "pm-monitor-new-bug-issues",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Summarize bug issues and assignment status.",
+      "assignment_limitations": "CNN is news summarization; issue summaries, project metrics, presentation synthesis and agent tool use are transferred, unvalidated settings.",
+      "source_department": "pm",
+      "recorded_agent_actions": 14,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_pm-monitor-new-bug-issues-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tCheck GitLab repo http://the-agent-company.com:8929/root/openhands for open issues labeled 'bug' from 24 September 2024 to 24 October 2024. Note their assignment status if they are assigned or unassigned. Go to Rocketchat at http://the-agent-company.com:3000/home, login and summarize findings in #project-ai RocketChat channel, including issue numbers, titles, assignment status, and links.\n     2\t\n"
+      ]
+    },
+    {
+      "task_id": "pm-prepare-meeting-with-customers",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Synthesize benchmark capabilities into presentation domains; includes slide creation.",
+      "assignment_limitations": "CNN is news summarization; issue summaries, project metrics, presentation synthesis and agent tool use are transferred, unvalidated settings.",
+      "source_department": "pm",
+      "recorded_agent_actions": 16,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_pm-prepare-meeting-with-customers-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tWe are about to meet with potential customers for our openhands agent services. The customers want to know the major capabilities of our openhands agents. Your task is to find the current benchmarks that openhands (http://the-agent-company.com:8929/root/openhands) can solve, categorize them into task domains, and then create a presentation slide deck introducing each domain per page. Save the final presentation as '/workspace/openhands_intro.pptx' and send the file name to Huang Jie on http://the-agent-company.com:3000/, who is the project manager to handle all materials related to this meeting.\n"
+      ]
+    },
+    {
+      "task_id": "pm-projects-analytics",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "adapter_assignment": "constructed",
+      "assignment_reason": "Collect project metrics and communicate a structured summary.",
+      "assignment_limitations": "CNN is news summarization; issue summaries, project metrics, presentation synthesis and agent tool use are transferred, unvalidated settings.",
+      "source_department": "pm",
+      "recorded_agent_actions": 8,
+      "trajectory_path_in_source_repo": "evaluation/1.0.0/20250510_OpenHands-0.28.1-sonnet-20250219/trajectories/traj_pm-projects-analytics-image.json.gz",
+      "instruction_observations": [
+        "Here's the result of running `cat -n` on /instruction/task.md:\n     1\tAnalyze TheAgentCompany's performance and create a summary in Plane.\n     2\t\n     3\tSteps:\n     4\t1. Access Plane at http://the-agent-company.com:8091/tac/. Navigate to \"Analytics\" and analyze all project metrics.\n     5\t2. Collect Metrics:\n     6\t    - Open Tasks: [Number of Open Tasks]\n     7\t    _ Backlog Tasks: [Number of Backlog Tasks]\n     8\t    - Unstarted Tasks: [Number of Unstarted Tasks]\n     9\t    - Started Tasks: [Number of Started Tasks]\n    10\t    - Unassigned Issues: [Number of Unassigned Issues]\n    11\t    - Pending Issues: [Total number of Pending Issues]\n    12\t3. Create Summary using above structure. Share summary with the team on Rocket.Chat. http://the-agent-company.com:3000/home in the #kudos channel.\n    13\t\n"
+      ]
+    }
+  ]
+}

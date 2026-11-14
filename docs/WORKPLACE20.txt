@@ -1,0 +1,64 @@
+WORKPLACE20: four tasks per role, five roles, five real Predibase LoRAs
+
+Extract this archive in ~/locality-dilemma on the VM. It adds distinct scripts and
+reports/theagentcompany_20tasks.json. The earlier 11-task pilot stays separate.
+
+Activate the same Python environment used for the pilot. It already contains
+huggingface_hub and transformers. No PyTorch is needed for these preparation steps.
+
+1. Download the additional fifth active adapter:
+   hf download predibase/gsm8k --local-dir models/adapters/predibase__gsm8k
+
+2. Run the local-file preflight and regenerate the complete five-adapter inventory:
+   python verify_workplace_setup.py
+
+3. Build the three context-limit workloads:
+   python build_workplace_replay.py
+
+Outputs:
+   reports/theagentcompany_20tasks_verified.json
+   reports/adapter_manifest_20tasks.json
+   data/agent_replay_20tasks/replay_8192.jsonl
+   data/agent_replay_20tasks/replay_16384.jsonl
+   data/agent_replay_20tasks/replay_32768.jsonl
+   data/agent_replay_20tasks/coverage.json
+
+The verification and replay scripts refuse to replace their output files unless
+--overwrite is explicitly supplied. Allow time to tokenize long accumulated
+histories. No source command or enterprise action is executed by these scripts.
+
+INTERPRETATION
+These are recorded events from one Sonnet/OpenHands run, reconstructed as text
+inputs with one fixed assigned LoRA per trajectory. They are not the original
+serialized model inputs. Images are omitted; tool observations are not capped.
+The fixed instruction now says "workplace" instead of "software engineering".
+Do not directly attribute differences from the earlier pilot to task selection
+alone, because this instruction also changed.
+
+Role-to-adapter assignments are serving proxies. Their domain transfer and full
+agent/tool-use competence are unvalidated; see the per-task manifest limitations.
+CNN was trained for news summaries, GSM8K for grade-school arithmetic, WikiSQL
+for table-based SQL, DROP Explained for passage QA, and Magicoder for coding.
+
+Four tasks per role does not imply equal requests/tokens or equal retention.
+Coverage is reported for every selected task and exported role. Summarize latency
+per task and role as well as pooled over requests.
+
+The 20 source trajectories contain 622 recorded agent actions in the supplied
+instruction inventory. Actual reconstructed request counts and retention must
+be measured by the builder, not inferred from action totals.
+
+Each export preserves order within tasks and uses constructed cross-task
+round-robin ordering. There are no production arrival timestamps. Recorded shared
+prefix lengths compare token IDs with the preceding retained same-task/same-adapter
+request; they do not prove cache hits, cache residency, or reuse across adapters.
+
+Partner B must check actual vLLM LoRA loading, adapter residency/eviction semantics,
+cached-token counts, and GPU feasibility. Start with one active request, then expand.
+The full-context limit includes the 32-token output reservation. For Mistral v0.1,
+also record its sliding-window attention setting and actual engine behavior.
+
+Selecting four roles of tasks by their dominant activity is a purposive sample,
+not a statistically representative sample of all enterprise-agent workloads.
+All 175 uploaded instruction records were available; all 20 selected instructions
+are included in the manifest as selection evidence.
