@@ -1,0 +1,289 @@
+{
+  "source_commit": "f9b1e9411fcb554e76509a0e1bc8fe7f8b0e69d6",
+  "source_run": "20250510_OpenHands-0.28.1-sonnet-20250219",
+  "manifest": "reports/theagentcompany_20tasks_verified.json",
+  "tokenizer": "models/base",
+  "reserved_output_tokens": 32,
+  "construction": "v2 event normalization with workplace-neutral instruction; not original model inputs",
+  "observations": "Preserved without length caps; image fields/data omitted as in v2",
+  "scheduling": "Constructed round-robin; no original arrival timing inferred",
+  "examined_requests": 622,
+  "tasks": [
+    {
+      "task_id": "sde-migrate-package-manager",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "examined": 7,
+      "retained_by_limit": {
+        "8192": 7,
+        "16384": 7,
+        "32768": 7
+      }
+    },
+    {
+      "task_id": "sde-write-a-unit-test-for-scroll_down-function",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "examined": 16,
+      "retained_by_limit": {
+        "8192": 5,
+        "16384": 8,
+        "32768": 16
+      }
+    },
+    {
+      "task_id": "sde-debug-crashed-server",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "examined": 100,
+      "retained_by_limit": {
+        "8192": 13,
+        "16384": 32,
+        "32768": 68
+      }
+    },
+    {
+      "task_id": "sde-implement-hyperloglog",
+      "role": "coding",
+      "adapter_id": "predibase/magicoder",
+      "examined": 100,
+      "retained_by_limit": {
+        "8192": 3,
+        "16384": 9,
+        "32768": 20
+      }
+    },
+    {
+      "task_id": "ds-sql-exercise",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "examined": 14,
+      "retained_by_limit": {
+        "8192": 14,
+        "16384": 14,
+        "32768": 14
+      }
+    },
+    {
+      "task_id": "ds-coffee-shop-database-management",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "examined": 41,
+      "retained_by_limit": {
+        "8192": 6,
+        "16384": 9,
+        "32768": 29
+      }
+    },
+    {
+      "task_id": "sde-create-sqlite-database",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "examined": 20,
+      "retained_by_limit": {
+        "8192": 5,
+        "16384": 8,
+        "32768": 20
+      }
+    },
+    {
+      "task_id": "sde-run-rising-wave-locally",
+      "role": "data_querying",
+      "adapter_id": "predibase/wikisql",
+      "examined": 43,
+      "retained_by_limit": {
+        "8192": 5,
+        "16384": 9,
+        "32768": 27
+      }
+    },
+    {
+      "task_id": "ds-answer-numerical-data-question",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "examined": 15,
+      "retained_by_limit": {
+        "8192": 5,
+        "16384": 9,
+        "32768": 15
+      }
+    },
+    {
+      "task_id": "admin-collect-requests-and-compute-total-price",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "examined": 58,
+      "retained_by_limit": {
+        "8192": 9,
+        "16384": 18,
+        "32768": 35
+      }
+    },
+    {
+      "task_id": "finance-budget-variance",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "examined": 24,
+      "retained_by_limit": {
+        "8192": 6,
+        "16384": 9,
+        "32768": 24
+      }
+    },
+    {
+      "task_id": "finance-check-attendance-payroll",
+      "role": "numerical_analysis",
+      "adapter_id": "predibase/gsm8k",
+      "examined": 24,
+      "retained_by_limit": {
+        "8192": 6,
+        "16384": 9,
+        "32768": 15
+      }
+    },
+    {
+      "task_id": "research-answer-questions-on-paper",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "examined": 25,
+      "retained_by_limit": {
+        "8192": 5,
+        "16384": 9,
+        "32768": 25
+      }
+    },
+    {
+      "task_id": "finance-find-signatories",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "examined": 37,
+      "retained_by_limit": {
+        "8192": 9,
+        "16384": 16,
+        "32768": 23
+      }
+    },
+    {
+      "task_id": "hr-organize-talent-info",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "examined": 18,
+      "retained_by_limit": {
+        "8192": 6,
+        "16384": 10,
+        "32768": 18
+      }
+    },
+    {
+      "task_id": "hr-populate-salary-increase-memo",
+      "role": "document_qa_extraction",
+      "adapter_id": "predibase/drop_explained",
+      "examined": 25,
+      "retained_by_limit": {
+        "8192": 6,
+        "16384": 9,
+        "32768": 18
+      }
+    },
+    {
+      "task_id": "sde-summarize-recent-issues",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "examined": 17,
+      "retained_by_limit": {
+        "8192": 2,
+        "16384": 3,
+        "32768": 7
+      }
+    },
+    {
+      "task_id": "pm-monitor-new-bug-issues",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "examined": 14,
+      "retained_by_limit": {
+        "8192": 2,
+        "16384": 3,
+        "32768": 7
+      }
+    },
+    {
+      "task_id": "pm-prepare-meeting-with-customers",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "examined": 16,
+      "retained_by_limit": {
+        "8192": 2,
+        "16384": 3,
+        "32768": 6
+      }
+    },
+    {
+      "task_id": "pm-projects-analytics",
+      "role": "summarization_synthesis",
+      "adapter_id": "predibase/cnn",
+      "examined": 8,
+      "retained_by_limit": {
+        "8192": 8,
+        "16384": 8,
+        "32768": 8
+      }
+    }
+  ],
+  "exports": {
+    "8192": {
+      "requests": 124,
+      "tasks": 20,
+      "requests_per_adapter": {
+        "predibase/gsm8k": 26,
+        "predibase/wikisql": 30,
+        "predibase/drop_explained": 26,
+        "predibase/cnn": 14,
+        "predibase/magicoder": 28
+      },
+      "requests_per_role": {
+        "numerical_analysis": 26,
+        "data_querying": 30,
+        "document_qa_extraction": 26,
+        "summarization_synthesis": 14,
+        "coding": 28
+      }
+    },
+    "16384": {
+      "requests": 202,
+      "tasks": 20,
+      "requests_per_adapter": {
+        "predibase/gsm8k": 45,
+        "predibase/wikisql": 40,
+        "predibase/drop_explained": 44,
+        "predibase/cnn": 17,
+        "predibase/magicoder": 56
+      },
+      "requests_per_role": {
+        "numerical_analysis": 45,
+        "data_querying": 40,
+        "document_qa_extraction": 44,
+        "summarization_synthesis": 17,
+        "coding": 56
+      }
+    },
+    "32768": {
+      "requests": 402,
+      "tasks": 20,
+      "requests_per_adapter": {
+        "predibase/gsm8k": 89,
+        "predibase/wikisql": 90,
+        "predibase/drop_explained": 84,
+        "predibase/cnn": 28,
+        "predibase/magicoder": 111
+      },
+      "requests_per_role": {
+        "numerical_analysis": 89,
+        "data_querying": 90,
+        "document_qa_extraction": 84,
+        "summarization_synthesis": 28,
+        "coding": 111
+      }
+    }
+  }
+}
