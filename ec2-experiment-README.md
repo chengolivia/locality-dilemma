@@ -318,10 +318,10 @@ Reproducible automation scripts and fresh benchmark measurements are located in 
 
 ### Generated Reports & Results
 
-- **Comparison Report**: [`reports/kv_sharing_comparison.md`](reports/kv_sharing_comparison.md)
+- **Comparison Report**: [`reports/adapter-kv-cache/kv_sharing_comparison.md`](reports/adapter-kv-cache/kv_sharing_comparison.md)
   Full breakdown of hardware/software configuration, cache hit behavior, TTFT and throughput comparison, complete generated texts, and mathematical analysis of cross-adapter KV invalidity.
-- **Raw Measurements (Native)**: [`reports/kv_sharing_native.jsonl`](reports/kv_sharing_native.jsonl)
-- **Raw Measurements (Forced)**: [`reports/kv_sharing_forced.jsonl`](reports/kv_sharing_forced.jsonl)
+- **Raw Measurements (Native)**: [`reports/adapter-kv-cache/kv_sharing_native.jsonl`](reports/adapter-kv-cache/kv_sharing_native.jsonl)
+- **Raw Measurements (Forced)**: [`reports/adapter-kv-cache/kv_sharing_forced.jsonl`](reports/adapter-kv-cache/kv_sharing_forced.jsonl)
 
 ### Summary of Measurements
 
@@ -336,59 +336,11 @@ Reproducible automation scripts and fresh benchmark measurements are located in 
 
 *Historical vs. Fresh Reproduction*: Both historical and fresh measurements observed 0 hit tokens on Request 1, 0 hits on Request 2 under Native (vs 144 hits under Forced), and 144 hits on Request 3 (9 full 16-token blocks cached out of 148 prompt tokens). Prefill latency for the cached prefix drops by ~33% (from ~60.8 ms to ~40.6 ms).
 
-## 4. Automated Reproduction & Results (11/19/2026)
+---
 
-Reproducible automation scripts and fresh benchmark measurements are located in the repository:
+## 5. Additional Documentation
 
-### Automation Scripts
-
-1. **Patch Management Tool**: `scripts/patch_kv_cache.py`
-   - Check current state:
-     ```bash
-     python3 scripts/patch_kv_cache.py --status
-     ```
-   - Restore native vLLM cache hashing:
-     ```bash
-     python3 scripts/patch_kv_cache.py --restore
-     ```
-   - Apply forced cross-adapter sharing patch:
-     ```bash
-     python3 scripts/patch_kv_cache.py --forced
-     ```
-
-2. **Experiment Runner**: `scripts/run_kv_sharing_experiment.py`
-   - Automatically handles server lifecycle (`--start-server`), checks that `kv_cache_utils.py` matches the requested condition, verifies adapter registration and `--enable-per-request-metrics`, runs the 3-request sequence (`magicoder` -> `customer_support` -> `magicoder`), parses Prometheus metrics before and after each request, and records full outputs and timing metrics in JSONL.
-   - Run Condition A (Native):
-     ```bash
-     python3 scripts/patch_kv_cache.py --restore
-     python3 scripts/run_kv_sharing_experiment.py --condition native --output reports/kv_sharing_native.jsonl --start-server
-     ```
-   - Run Condition B (Forced):
-     ```bash
-     python3 scripts/patch_kv_cache.py --forced
-     python3 scripts/run_kv_sharing_experiment.py --condition forced --output reports/kv_sharing_forced.jsonl --start-server
-     ```
-   - Reset environment to native state:
-     ```bash
-     python3 scripts/patch_kv_cache.py --restore
-     ```
-
-### Generated Reports & Results
-
-- **Comparison Report**: [`reports/kv_sharing_comparison.md`](reports/kv_sharing_comparison.md)
-  Full breakdown of hardware/software configuration, cache hit behavior, TTFT and throughput comparison, complete generated texts, and mathematical analysis of cross-adapter KV invalidity.
-- **Raw Measurements (Native)**: [`reports/kv_sharing_native.jsonl`](reports/kv_sharing_native.jsonl)
-- **Raw Measurements (Forced)**: [`reports/kv_sharing_forced.jsonl`](reports/kv_sharing_forced.jsonl)
-
-### Summary of Measurements
-
-| Condition | Request | Adapter | Prompt / Compl Tok | Cache Hit Delta | TTFT (ms) | Gen Throughput | Finish Reason |
-|:---|:---:|:---|:---:|:---:|:---:|:---:|:---:|
-| **Native** | 1 | `magicoder` | 148 / 100 | **0.0** | 60.99 ms | 29.24 tok/s | `length` |
-| **Native** | 2 | `customer_support` | 148 / 1 | **0.0** | 60.74 ms | 16.46 tok/s | `stop` (EOS) |
-| **Native** | 3 | `magicoder` | 148 / 100 | **144.0** | **40.73 ms** | 29.41 tok/s | `length` |
-| **Forced** | 1 | `magicoder` | 148 / 100 | **0.0** | 60.78 ms | 29.24 tok/s | `length` |
-| **Forced** | 2 | `customer_support` | 148 / 100 | **144.0** | **40.72 ms** | 29.41 tok/s | `length` |
-| **Forced** | 3 | `magicoder` | 148 / 100 | **144.0** | **40.61 ms** | 29.41 tok/s | `length` |
-
-*Historical vs. Fresh Reproduction*: Both historical and fresh measurements observed 0 hit tokens on Request 1, 0 hits on Request 2 under Native (vs 144 hits under Forced), and 144 hits on Request 3 (9 full 16-token blocks cached out of 148 prompt tokens). Prefill latency for the cached prefix drops by ~33% (from ~60.8 ms to ~40.6 ms).
+For further architectural context and experimental guides:
+- [Experiment Environment Setup Guide](docs/experiment-setup.md)
+- [Controlled Real-Model KV-Cache Sharing Guide](docs/experiments/controlled-kv-cache.md)
+- [Project Overview](docs/project-overview.md)
