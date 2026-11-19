@@ -24,12 +24,13 @@ share/python-wheels/
 *.egg
 MANIFEST
 
-# Virtual Environments
+# Virtual Environments & Testing
 .venv/
 venv/
 ENV/
 env.bak/
 venv.bak/
+.pytest_cache/
 
 # Jupyter & IDEs
 .ipynb_checkpoints/
@@ -57,13 +58,18 @@ models/
 adapters/
 huggingface/
 
-#Profiling Data & Sweeps
+# Profiling Data & Sweeps
 *.csv
 *.parquet
 *.jsonl
 !reports/*.jsonl
+!reports/**/*.jsonl
+!reports/**/*.csv
+!h100-synthetic-20261024/*.csv
+!h100-synthetic-20261024/**/*.csv
 *.log
-data/
+data/*
+!data/README.md
 results/
 sweeps/
 logs/
