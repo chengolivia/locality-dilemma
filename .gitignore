@@ -65,6 +65,7 @@ huggingface/
 !reports/*.jsonl
 !reports/**/*.jsonl
 !reports/**/*.csv
+!tests/fixtures/*.jsonl
 !h100-synthetic-20261024/*.csv
 !h100-synthetic-20261024/**/*.csv
 *.log
