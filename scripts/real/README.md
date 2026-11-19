@@ -62,5 +62,8 @@ python scripts/real/run_generation.py \
     --output results/generations.jsonl
 ```
 
-### 5. `real-pipeline.sh`
+### 5. `measurement.py`
+Reusable telemetry and measurement infrastructure for real-workload replay experiments. Scrapes Prometheus prefix-cache counters before/after each request, executes completions via HTTP POST, and structures per-request latency, token counts, generated text, and counter deltas with explicit handling of missing metrics (no silent zero substitution).
+
+### 6. `real-pipeline.sh`
 Convenience wrapper that invokes `scripts/run_pipeline.sh --mode real`.
