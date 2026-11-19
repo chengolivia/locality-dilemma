@@ -23,7 +23,13 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-from patch_kv_cache import DEFAULT_FILE, get_status
+try:
+    from patch_kv_cache import DEFAULT_FILE, get_status
+except ImportError:
+    try:
+        from .patch_kv_cache import DEFAULT_FILE, get_status
+    except ImportError:
+        from scripts.real.patch_kv_cache import DEFAULT_FILE, get_status
 
 DEFAULT_PROMPT = (
     "Experiment 20261114-A7F3. Shared instructions for two agents: "

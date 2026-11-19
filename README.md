@@ -88,7 +88,8 @@ locality-dilemma/
 │   └── real-workloads/            # 20-task manifests, adapter headers, and coverage
 ├── h100-synthetic-20261024/       # Historical NVIDIA H100 benchmark run (timings & plots)
 ├── tests/                         # Unit tests & verification suite
-└── data/                          # Workload files and replay outputs (README)
+├── data/                          # Workload files and replay outputs (README)
+└── build_workplace_replay.py      # Multi-turn workplace trajectory replay builder
 ```
 
 ---
@@ -117,10 +118,10 @@ export PATH="$CUDA_HOME/bin:$PATH"
 
 ```bash
 # Run full synthetic pipeline on GPU (evaluates all 35 parameter points)
-./synthetic-pipeline.sh
+./scripts/synthetic/synthetic-pipeline.sh
 
 # Fast CPU dry-run smoke test (evaluates reduced grid)
-./synthetic-pipeline.sh --dry-run
+./scripts/synthetic/synthetic-pipeline.sh --dry-run
 ```
 
 ### 3. Running Controlled Real-Model KV-Cache Experiments
