@@ -23,14 +23,17 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
 # Default configuration values
 MODE="synthetic"
 DRY_RUN=false
 FULL_GRID=false
 OUTPUT_DIR="results"
-BASE_MODEL="models/base"
-ADAPTERS_DIR="models/adapters"
-WORKLOADS="data/workloads.jsonl"
+BASE_MODEL="${REPO_DIR}/models/base"
+ADAPTERS_DIR="${REPO_DIR}/models/adapters"
+WORKLOADS="${REPO_DIR}/data/workloads.jsonl"
 ITERATIONS=""
 WARMUP=""
 RANKS=("8" "16" "32" "64" "128")
@@ -133,12 +136,14 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Detect python interpreter: prefer active virtualenv or .venv
+# Detect python interpreter: prefer active virtualenv, .venv, or ~/venvs/vllm
 if [[ -z "${PYTHON:-}" ]]; then
     if [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python" ]]; then
         PYTHON="${VIRTUAL_ENV}/bin/python"
-    elif [[ -x "./.venv/bin/python" ]]; then
-        PYTHON="./.venv/bin/python"
+    elif [[ -x "${REPO_DIR}/.venv/bin/python" ]]; then
+        PYTHON="${REPO_DIR}/.venv/bin/python"
+    elif [[ -x "$HOME/venvs/vllm/bin/python" ]]; then
+        PYTHON="$HOME/venvs/vllm/bin/python"
     else
         PYTHON="python"
     fi
@@ -210,7 +215,7 @@ if [[ "$MODE" == "real" ]]; then
     fi
 fi
 
-"$PYTHON" benchmark_lora_transfer.py "${LORA_ARGS[@]}"
+"$PYTHON" "${SCRIPT_DIR}/synthetic/benchmark_lora_transfer.py" "${LORA_ARGS[@]}"
 echo ">>> Step 1 Complete: $SWAP_CSV generated."
 echo
 
@@ -260,7 +265,7 @@ if [[ "$MODE" == "real" ]]; then
     fi
 fi
 
-"$PYTHON" benchmark_prefill_latency.py "${PREFILL_ARGS[@]}"
+"$PYTHON" "${SCRIPT_DIR}/synthetic/benchmark_prefill_latency.py" "${PREFILL_ARGS[@]}"
 echo ">>> Step 2 Complete: $PREFILL_CSV and $TIMINGS_CSV generated."
 echo
 
@@ -269,9 +274,15 @@ echo
 # ------------------------------------------------------------------------------
 echo ">>> [Step 3/3] Running Pareto Frontier Analysis (analyze_results.py)..."
 
-"$PYTHON" analyze_results.py \
-    --input "$TIMINGS_CSV" \
-    --output-dir "$ANALYSIS_DIR"
+if "$PYTHON" -c "import pandas, matplotlib" 2>/dev/null; then
+    "$PYTHON" "${SCRIPT_DIR}/analysis/analyze_results.py" \
+        --input "$TIMINGS_CSV" \
+        --output-dir "$ANALYSIS_DIR"
+else
+    echo "[!] Note: 'pandas' and/or 'matplotlib' not found in $PYTHON environment."
+    echo "    Skipping Step 3 (Pareto analysis). Install from requirements.txt to enable plotting."
+    echo "    Raw measurements are preserved in $TIMINGS_CSV, $SWAP_CSV, and $PREFILL_CSV."
+fi
 
 echo
 echo "=============================================================================="

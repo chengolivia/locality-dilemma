@@ -19,12 +19,18 @@ def digest(path):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--manifest', default='reports/theagentcompany_20tasks.json')
+    default_manifest = 'reports/real-workloads/theagentcompany_20tasks.json'
+    if not Path(default_manifest).exists() and Path('reports/theagentcompany_20tasks.json').exists():
+        default_manifest = 'reports/theagentcompany_20tasks.json'
+    p.add_argument('--manifest', default=default_manifest)
     p.add_argument('--source-repo', default='data/theagentcompany-experiments')
     p.add_argument('--adapters-dir', default='models/adapters')
     p.add_argument('--overwrite', action='store_true')
     a = p.parse_args()
-    manifest = json.loads(Path(a.manifest).read_text())
+    manifest_path = Path(a.manifest)
+    if not manifest_path.exists() and (Path('reports/real-workloads') / manifest_path.name).exists():
+        manifest_path = Path('reports/real-workloads') / manifest_path.name
+    manifest = json.loads(manifest_path.read_text())
     tasks = manifest['tasks']
     counts = Counter(t['role'] for t in tasks)
     if len({t['task_id'] for t in tasks}) != 20 or len(counts) != 5 or set(counts.values()) != {4}:
@@ -83,7 +89,9 @@ def main():
         records.append(record)
         print(f"{adapter}: rank={record['rank']} dtypes={record['stored_dtypes']} tensor_MB={record['tensor_bytes']/1e6:.2f}")
 
-    outputs = [Path('reports/theagentcompany_20tasks_verified.json'), Path('reports/adapter_manifest_20tasks.json')]
+    manifest_arg = Path(a.manifest)
+    out_dir = manifest_arg.parent if manifest_arg.parent.name in ('real-workloads', 'reports') else Path('reports')
+    outputs = [out_dir / 'theagentcompany_20tasks_verified.json', out_dir / 'adapter_manifest_20tasks.json']
     if not a.overwrite and any(f.exists() for f in outputs):
         raise FileExistsError('Verified output exists; use --overwrite only if replacement is intended')
     manifest['source_commit'] = revision

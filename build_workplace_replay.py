@@ -129,7 +129,10 @@ def write_replay(path, rows, context_limit, reserve):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--manifest", default="reports/theagentcompany_20tasks_verified.json")
+    default_manifest = "reports/real-workloads/theagentcompany_20tasks_verified.json"
+    if not Path(default_manifest).exists() and Path("reports/theagentcompany_20tasks_verified.json").exists():
+        default_manifest = "reports/theagentcompany_20tasks_verified.json"
+    p.add_argument("--manifest", default=default_manifest)
     p.add_argument("--source-repo", default="data/theagentcompany-experiments")
     p.add_argument("--tokenizer", default="models/base")
     p.add_argument("--limits", nargs="+", type=int, default=[8192, 16384, 32768])
@@ -145,7 +148,10 @@ def main():
     if not args.overwrite and any(path.exists() for path in outputs):
         p.error("Output exists; choose a new --output-dir or explicitly use --overwrite")
 
-    manifest = json.loads(Path(args.manifest).read_text())
+    manifest_path = Path(args.manifest)
+    if not manifest_path.exists() and (Path("reports/real-workloads") / manifest_path.name).exists():
+        manifest_path = Path("reports/real-workloads") / manifest_path.name
+    manifest = json.loads(manifest_path.read_text())
     tasks = manifest["tasks"]
     if len({t["task_id"] for t in tasks}) != len(tasks):
         p.error("Manifest has duplicate task IDs")

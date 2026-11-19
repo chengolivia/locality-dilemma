@@ -1,4 +1,4 @@
-"""Small offline checks: python -m unittest test_workplace_tools -v"""
+"""Small offline checks: python -m unittest tests/test_workplace_tools.py -v"""
 import contextlib
 import gzip
 import io
@@ -6,9 +6,18 @@ import json
 import os
 from pathlib import Path
 import struct
+import sys
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
+
+# Ensure repo root and workplace scripts are importable
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
+_WORKPLACE_DIR = _REPO_ROOT / "scripts" / "workplace"
+if str(_WORKPLACE_DIR) not in sys.path:
+    sys.path.insert(0, str(_WORKPLACE_DIR))
 
 import build_workplace_replay as replay
 import verify_workplace_setup as verify

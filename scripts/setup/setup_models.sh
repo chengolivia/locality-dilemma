@@ -3,11 +3,12 @@
 # Run from your cloned locality-dilemma repository on an authorized PSC node.
 set -Eeuo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_DIR"
 
-if [[ ! -f download_models.py || ! -f requirements-local.txt ]]; then
-  echo "ERROR: Place setup_models.sh in the locality-dilemma repository (next to download_models.py)." >&2
+if [[ ! -f "$SCRIPT_DIR/download_models.py" || ! -f "$REPO_DIR/requirements-local.txt" ]]; then
+  echo "ERROR: Place setup_models.sh in the locality-dilemma repository (scripts/setup)." >&2
   exit 1
 fi
 
@@ -46,7 +47,7 @@ if [[ $# -ge 1 ]]; then
   fi
 fi
 
-python download_models.py --adapters predibase/customer_support predibase/magicoder
+python "$SCRIPT_DIR/download_models.py" --adapters predibase/customer_support predibase/magicoder
 
 python - <<'PY'
 import json

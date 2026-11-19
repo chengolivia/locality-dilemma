@@ -14,12 +14,17 @@
 
 set -euo pipefail
 
-# Detect python interpreter: prefer active virtualenv or .venv
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
+
+# Detect python interpreter: prefer active virtualenv, .venv, or ~/venvs/vllm
 if [[ -z "${PYTHON:-}" ]]; then
     if [[ -n "${VIRTUAL_ENV:-}" && -x "${VIRTUAL_ENV}/bin/python" ]]; then
         PYTHON="${VIRTUAL_ENV}/bin/python"
-    elif [[ -x "./.venv/bin/python" ]]; then
-        PYTHON="./.venv/bin/python"
+    elif [[ -x "${REPO_DIR}/.venv/bin/python" ]]; then
+        PYTHON="${REPO_DIR}/.venv/bin/python"
+    elif [[ -x "$HOME/venvs/vllm/bin/python" ]]; then
+        PYTHON="$HOME/venvs/vllm/bin/python"
     else
         PYTHON="python"
     fi
@@ -98,7 +103,7 @@ echo
 # ------------------------------------------------------------------------------
 echo ">>> [Step 1/3] Benchmarking LoRA Host-to-Device Swap Latency (T_swap)..."
 if [[ -n "$DRY_RUN_FLAG" && "$FULL_GRID" == false ]]; then
-    "$PYTHON" benchmark_lora_transfer.py \
+    "$PYTHON" "${SCRIPT_DIR}/benchmark_lora_transfer.py" \
         --dry-run \
         --ranks 8 16 \
         --iterations 5 \
@@ -111,7 +116,7 @@ else
     else
         EXTRA_FLAGS+=("--iterations" "100" "--warmup" "10")
     fi
-    "$PYTHON" benchmark_lora_transfer.py \
+    "$PYTHON" "${SCRIPT_DIR}/benchmark_lora_transfer.py" \
         --ranks 8 16 32 64 128 \
         "${EXTRA_FLAGS[@]}" \
         --output-csv "$SWAP_CSV"
@@ -125,7 +130,7 @@ echo
 # ------------------------------------------------------------------------------
 echo ">>> [Step 2/3] Benchmarking Forward Prefill Latency (Delta T_prefill)..."
 if [[ -n "$DRY_RUN_FLAG" && "$FULL_GRID" == false ]]; then
-    "$PYTHON" benchmark_prefill_latency.py \
+    "$PYTHON" "${SCRIPT_DIR}/benchmark_prefill_latency.py" \
         --dry-run \
         --context-lengths 128 256 \
         --iterations 5 \
@@ -140,7 +145,7 @@ else
     else
         EXTRA_FLAGS+=("--iterations" "50" "--warmup" "10")
     fi
-    "$PYTHON" benchmark_prefill_latency.py \
+    "$PYTHON" "${SCRIPT_DIR}/benchmark_prefill_latency.py" \
         --context-lengths 128 256 512 1024 2048 4096 8192 \
         "${EXTRA_FLAGS[@]}" \
         --swap-csv "$SWAP_CSV" \
@@ -154,9 +159,15 @@ echo
 # Step 3: Run Pareto frontier analysis & generate heatmap
 # ------------------------------------------------------------------------------
 echo ">>> [Step 3/3] Running Pareto Frontier Analysis (analyze_results.py)..."
-"$PYTHON" analyze_results.py \
-    --input "$TIMINGS_CSV" \
-    --output-dir "$ANALYSIS_DIR"
+if "$PYTHON" -c "import pandas, matplotlib" 2>/dev/null; then
+    "$PYTHON" "${REPO_DIR}/scripts/analysis/analyze_results.py" \
+        --input "$TIMINGS_CSV" \
+        --output-dir "$ANALYSIS_DIR"
+else
+    echo "[!] Note: 'pandas' and/or 'matplotlib' not found in $PYTHON environment."
+    echo "    Skipping Step 3 (Pareto analysis). Install from requirements.txt to enable plotting."
+    echo "    Raw measurements are preserved in $TIMINGS_CSV, $SWAP_CSV, and $PREFILL_CSV."
+fi
 
 echo
 echo "=============================================================================="
