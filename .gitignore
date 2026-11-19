@@ -1,4 +1,5 @@
 # Python & Environments
+__pycache__/
 pycache/
 *.py[cod]
 *$py.class
@@ -60,6 +61,7 @@ huggingface/
 *.csv
 *.parquet
 *.jsonl
+!reports/*.jsonl
 *.log
 data/
 results/
