@@ -275,6 +275,12 @@ def main():
         help="Path to reconstructed replay JSONL file (e.g. replay_8192.jsonl)",
     )
     parser.add_argument(
+        "--prefix",
+        type=str,
+        default="",
+        help="Prefix to prepend to output filename (e.g. 'forced_')",
+    )
+    parser.add_argument(
         "--strategy",
         choices=["adapter_interleaved", "adapter_grouped", "both"],
         default="both",
@@ -383,7 +389,7 @@ def main():
     run_paths: List[Path] = []
 
     for strat, sched in schedules.items():
-        out_file = output_dir / f"{strat}_{timestamp}.jsonl"
+        out_file = output_dir / f"{args.prefix}{strat}_{timestamp}.jsonl"
         run_strategy_replay(
             strategy=strat,
             schedule=sched,
