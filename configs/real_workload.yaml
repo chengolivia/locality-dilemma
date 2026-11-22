@@ -1,0 +1,126 @@
+# Centralized Experiment Configuration: Real-World Workload Replay
+# Locality Dilemma: Dissecting Adapter Warmth vs. KV Prefix Reuse
+# Base Model: Mistral-7B-v0.1 with 5 Functional LoRA Adapters
+
+base_model:
+  model_name: "mistral-base"
+  model_path: "./models/base"
+  hf_repo: "mistralai/Mistral-7B-v0.1"
+  dtype: "half"
+  max_model_len: 4096
+
+adapters:
+  magicoder:
+    role: "coding"
+    adapter_path: "./models/adapters/predibase__magicoder"
+    hf_repo: "predibase/magicoder"
+    rank: 8
+    alpha: 16
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+    description: "Software engineering & code generation"
+
+  wikisql:
+    role: "data_querying"
+    adapter_path: "./models/adapters/predibase__wikisql"
+    hf_repo: "predibase/wikisql"
+    rank: 8
+    alpha: 16
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+    description: "Structured data & SQL query synthesis"
+
+  gsm8k:
+    role: "numerical_analysis"
+    adapter_path: "./models/adapters/predibase__gsm8k"
+    hf_repo: "predibase/gsm8k"
+    rank: 8
+    alpha: 16
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+    description: "Arithmetic & multi-step math reasoning"
+
+  drop_explained:
+    role: "document_qa_extraction"
+    adapter_path: "./models/adapters/predibase__drop_explained"
+    hf_repo: "predibase/drop_explained"
+    rank: 8
+    alpha: 16
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+    description: "Reading comprehension & fact extraction"
+
+  cnn:
+    role: "summarization_synthesis"
+    adapter_path: "./models/adapters/predibase__cnn"
+    hf_repo: "predibase/cnn"
+    rank: 8
+    alpha: 16
+    target_modules:
+      - "q_proj"
+      - "v_proj"
+    description: "News & document summarization"
+
+role_to_adapter:
+  coding: "magicoder"
+  data_querying: "wikisql"
+  numerical_analysis: "gsm8k"
+  document_qa_extraction: "drop_explained"
+  summarization_synthesis: "cnn"
+
+vllm_server:
+  host: "0.0.0.0"
+  port: 8000
+  server_url: "http://localhost:8000"
+  max_loras: 5
+  max_lora_rank: 8
+  gpu_memory_utilization: 0.85
+  enable_prefix_caching: true
+  enable_per_request_metrics: true
+  ready_timeout_sec: 180
+
+generation:
+  temperature: 0.0
+  max_tokens: 128
+  top_p: 1.0
+
+ordering_strategies:
+  adapter_interleaved:
+    strategy_id: "adapter_interleaved"
+    description: "Interleaves requests across different task roles/adapters round-robin, testing KV prefix eviction and adapter switching overheads."
+  adapter_grouped:
+    strategy_id: "adapter_grouped"
+    description: "Groups requests by adapter/role, maximizing adapter warmth before switching adapters, while testing prefix reuse within each adapter's requests."
+
+metrics:
+  per_request_server:
+    - "time_to_first_token_ms"
+    - "generation_time_ms"
+    - "queue_time_ms"
+    - "mean_itl_ms"
+    - "tokens_per_second"
+  client:
+    - "client_elapsed_ms"
+  token_usage:
+    - "prompt_tokens"
+    - "completion_tokens"
+    - "total_tokens"
+  prometheus_counters:
+    - "vllm:prefix_cache_queries_total"
+    - "vllm:prefix_cache_hits_total"
+    - "vllm:prompt_tokens_cached_total"
+    - "vllm:kv_cache_usage_perc"
+  derived_deltas:
+    - "prefix_cache_queries_delta"
+    - "prefix_cache_hits_delta"
+    - "cache_hit_rate"
+
+paths:
+  output_dir: "reports/real-workloads/runs"
+  run_file_pattern: "{strategy}_{timestamp}.jsonl"
+  summary_file_pattern: "{strategy}_{timestamp}_summary.json"
+  report_file_pattern: "{strategy}_{timestamp}_report.md"

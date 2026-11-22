@@ -62,5 +62,25 @@ python scripts/real/run_generation.py \
     --output results/generations.jsonl
 ```
 
-### 5. `real-pipeline.sh`
+### 5. `measurement.py`
+Reusable telemetry and measurement infrastructure for real-workload replay experiments. Scrapes Prometheus prefix-cache counters before/after each request, executes completions via HTTP POST, and structures per-request latency, token counts, generated text, and counter deltas with explicit handling of missing metrics (no silent zero substitution).
+
+### 6. `run_workload_replay.py`
+Execution runner bridging reconstructed TheAgentCompany replays (`data/agent_replay_20tasks/replay_8192.jsonl`) to `measurement.py` and vLLM. Constructs `adapter_interleaved` (121 adapter transitions) and `adapter_grouped` (4 adapter transitions) schedules, executes requests sequentially against the multi-adapter server, and logs per-request telemetry to `reports/real-workloads/runs/{strategy}_{timestamp}.jsonl`.
+
+```bash
+# Verify schedules in dry-run mode without sending requests
+python scripts/real/run_workload_replay.py --dry-run
+
+# Run both schedules against active vLLM instance
+python scripts/real/run_workload_replay.py \
+    --config configs/real_workload.yaml \
+    --replay-file data/agent_replay_20tasks/replay_8192.jsonl \
+    --strategy both
+
+# Run smoke test on first 5 requests
+python scripts/real/run_workload_replay.py --limit 5
+```
+
+### 7. `real-pipeline.sh`
 Convenience wrapper that invokes `scripts/run_pipeline.sh --mode real`.

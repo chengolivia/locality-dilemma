@@ -1,10 +1,10 @@
-# Pareto Frontier Analysis & Visualization
+# Analysis & Visualization Scripts
 
-This directory contains analysis scripts for computing the Pareto trade-off between adapter swap latency and prefill compute latency.
+This directory contains analysis scripts for computing Pareto frontiers on synthetic benchmarks and evaluating real-world multi-adapter workload replays.
 
 ## Scripts
 
-### `analyze_results.py`
+### 1. `analyze_results.py`
 Ingests paired measurements (`timings.csv`) containing `prefix_len`, `lora_rank`, `prefill_saved_ms`, and `swap_ms`.
 
 Computes:
@@ -18,4 +18,21 @@ Computes:
 python scripts/analysis/analyze_results.py \
     --input results/timings.csv \
     --output-dir results/analysis
+```
+
+### 2. `analyze_real_workload.py`
+Ingests JSONL measurement files from real-world workload replays (`adapter_interleaved` vs. `adapter_grouped`).
+
+Computes:
+- **Overall Latency Summaries**: TTFT (mean, median, p95), ITL, generation time, and throughput (tok/s).
+- **Cache Hit Telemetry**: Prometheus prefix-cache query deltas, hit deltas, token counts, and aggregate hit rates.
+- **Per-Adapter Breakdown**: Per-adapter latency, throughput, and cache efficiency.
+- **Interleaved vs. Grouped Comparison**: Direct speedup, TTFT deltas, and cache hit rate improvement under grouped execution.
+- **Markdown & JSON Reports**: Generates reproducible Markdown tables and structured JSON summary artifacts.
+
+```bash
+python scripts/analysis/analyze_real_workload.py \
+    --inputs reports/real-workloads/runs/*.jsonl \
+    --output-report reports/real-workloads/summary_report.md \
+    --output-json reports/real-workloads/summary.json
 ```
