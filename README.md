@@ -146,7 +146,7 @@ python scripts/real/run_kv_sharing_experiment.py \
 # Reset engine to native state
 python scripts/real/patch_kv_cache.py --restore
 ```
-*Key Result*: Forcing cache sharing reduces prefill TTFT by **~33.2%** (~20.2 ms on 144 cached tokens), but **invalidates mathematical correctness**, inducing markdown code-block syntax hallucinations under customer support prompts. For detailed outputs and mathematical analysis, see [Comparison Report](reports/adapter-kv-cache/kv_sharing_comparison.md).
+*Key Result*: Forcing cache sharing reduces prefill TTFT by **~33.2%** (~20.2 ms on 144 cached tokens), but **violates mathematical isolation between adapters**, altering generation behavior (e.g., generating code-fenced instructions rather than terminating on EOS). A follow-up validation confirmed that under native caching, five identical `customer_support` requests consistently emitted EOS (token ID 2, ~95.1% first-token probability), with same-adapter cache hits reducing TTFT from 61.40 ms to ~41.3 ms (~32.8%). The original prompt may not match the adapter's expected format, though this remains an untested hypothesis. For detailed outputs and mathematical analysis, see [Comparison Report](reports/adapter-kv-cache/kv_sharing_comparison.md).
 
 ### 4. Running Workplace Replay Tools (In Progress)
 
