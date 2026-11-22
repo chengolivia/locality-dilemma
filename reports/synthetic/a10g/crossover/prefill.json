@@ -1,0 +1,88 @@
+{
+  "config": {
+    "model": null,
+    "workloads": null,
+    "context_lengths": [
+      8,
+      16,
+      32,
+      64
+    ],
+    "batch_size": 1,
+    "num_layers": null,
+    "hidden_size": null,
+    "intermediate_size": null,
+    "num_heads": null,
+    "num_kv_heads": null,
+    "vocab_size": 32000,
+    "dtype": null,
+    "iterations": 50,
+    "warmup": 10,
+    "use_cache": true,
+    "device": "cuda:0",
+    "dry_run": false,
+    "output_json": "reports/synthetic/a10g/crossover/prefill.json",
+    "output_csv": "reports/synthetic/a10g/crossover/prefill.csv",
+    "swap_csv": "reports/synthetic/a10g/crossover/swap.csv",
+    "export_timings": "reports/synthetic/a10g/crossover/timings.csv"
+  },
+  "device_name": "NVIDIA A10G",
+  "results": [
+    {
+      "median": 43.7662410736084,
+      "mean": 43.866027450561525,
+      "std": 0.22857350122661865,
+      "min": 43.654144287109375,
+      "max": 44.505088806152344,
+      "p25": 43.73299026489258,
+      "p75": 43.90092849731445,
+      "p95": 44.37606430053711,
+      "peak_vram_mb": 13822.560546875,
+      "context_length": 8,
+      "batch_size": 1,
+      "throughput_tokens_per_sec": 182.78928698823307
+    },
+    {
+      "median": 44.138479232788086,
+      "mean": 44.22235771179199,
+      "std": 0.20773848599708405,
+      "min": 43.95110321044922,
+      "max": 44.79385757446289,
+      "p25": 44.088321685791016,
+      "p75": 44.318687438964844,
+      "p95": 44.66892623901367,
+      "peak_vram_mb": 13824.470703125,
+      "context_length": 16,
+      "batch_size": 1,
+      "throughput_tokens_per_sec": 362.49549776319583
+    },
+    {
+      "median": 45.34476661682129,
+      "mean": 45.43260368347168,
+      "std": 0.18154871062962222,
+      "min": 45.255680084228516,
+      "max": 45.92844772338867,
+      "p25": 45.2935676574707,
+      "p75": 45.55161666870117,
+      "p95": 45.80556869506836,
+      "peak_vram_mb": 13828.291015625,
+      "context_length": 32,
+      "batch_size": 1,
+      "throughput_tokens_per_sec": 705.7043709235708
+    },
+    {
+      "median": 47.62675094604492,
+      "mean": 47.755752105712894,
+      "std": 0.280518880725679,
+      "min": 47.42655944824219,
+      "max": 48.893951416015625,
+      "p25": 47.5596809387207,
+      "p75": 47.93036651611328,
+      "p95": 48.21094512939453,
+      "peak_vram_mb": 13836.431640625,
+      "context_length": 64,
+      "batch_size": 1,
+      "throughput_tokens_per_sec": 1343.7826164649337
+    }
+  ]
+}
