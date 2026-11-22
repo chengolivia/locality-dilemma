@@ -43,9 +43,10 @@ This report documents the baseline real-world workload replay experiment conduct
 | **Prometheus Cached Tokens Hit** | **104,032** | **241,152** | **+137,120 cached tokens (+131.8%)** |
 | **Aggregate Prefix Hit Rate** | **29.67%** | **68.78%** | **+39.11 percentage points** |
 | **Mean TTFT** | **603.25 ms** | **275.59 ms** | **-54.3% latency reduction** |
-| **Median TTFT (p50)** | **143.20 ms** | **113.84 ms** | -20.5% |
-| **95th Percentile TTFT (p95)** | **2,201.99 ms** | **787.26 ms** | **-64.2% tail latency reduction** |
-| **Workload Wall Duration** | 358.20 s (~5.97 min) | 317.65 s (~5.29 min) | -40.55 s saved (~11.3%) |
+| **Median TTFT (p50)** | **248.25 ms** | **186.28 ms** | **-24.96% latency reduction** |
+| **95th Percentile TTFT (p95)** | **2,087.40 ms** | **710.69 ms** | **-66.0% tail latency reduction** |
+| **Summed Client Elapsed Time** | 356.33 s | 315.81 s | -40.52 s saved (-11.4%) |
+| **Workload Wall Duration (Runner)** | 358.20 s (~5.97 min) | 317.70 s (~5.29 min) | -40.50 s saved (-11.3%) |
 
 ---
 
@@ -59,3 +60,8 @@ This report documents the baseline real-world workload replay experiment conduct
    - Because native vLLM hashes `("lora", name, path)` into every KV block, **zero tokens were reused across differing adapters** in either run.
    - All 241,152 hit tokens in `adapter_grouped` and 104,032 hit tokens in `adapter_interleaved` represent intra-adapter prefix reuse between successive steps of the same tasks/adapter.
    - These measurements establish the performance ceiling of scheduling optimizations within standard isolated architectures. Evaluating cross-adapter prefix reuse requires explicit forced-sharing testing.
+
+3. **Scheduling Transitions vs. Host-to-Device Transfers**:
+   - All five adapters fit concurrently in GPU memory (`--max-loras 5`) and remained resident throughout inference.
+   - The reported adapter transitions (121 in interleaved vs. 4 in grouped) represent **request scheduling transitions** (which active adapter is selected per request), not PCIe host-to-device weight swapping latency.
+   - Actual adapter dynamic transfer costs are isolated and measured in the synthetic transfer benchmark (`reports/transfer_cost_benchmark.md`).
