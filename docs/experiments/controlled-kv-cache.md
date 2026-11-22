@@ -23,8 +23,8 @@ This prevents adapter $B$ from reading KV tensors computed with adapter $A$'s we
 - **EC2 Instance**: `g5.2xlarge` (Ubuntu 24.04, NVIDIA A10G 24GB VRAM)
 - **Engine**: vLLM 0.33.0 (Commit `93a3e66d`, v1 core engine)
 - **Base Model**: `Mistral-7B-v0.1` (`./models/base`)
-- **LoRA Adapter 1**: `magicoder` (`./models/adapters/predibase__magicoder`, rank 8, target: `q, k, v, o`)
-- **LoRA Adapter 2**: `customer_support` (`./models/adapters/predibase__customer_support`, rank 8, target: `q, k, v, o`)
+- **LoRA Adapter 1**: `magicoder` (`./models/adapters/predibase__magicoder`, rank 8, target: `q_proj, v_proj`)
+- **LoRA Adapter 2**: `customer_support` (`./models/adapters/predibase__customer_support`, rank 8, target: `q_proj, v_proj`)
 - **vLLM Launch Arguments**:
   ```bash
   vllm serve ./models/base \
@@ -91,39 +91,46 @@ Prometheus metrics (`vllm:prefix_cache_hits_total`) were scraped immediately bef
 | TTFT (ms) | 60.99 ms | 60.74 ms | **40.73 ms** |
 | Generation Throughput | 29.24 tok/s | 16.46 tok/s | 29.41 tok/s |
 | Generated Output Tokens | 100 (`length`) | 1 (`stop` / EOS) | 100 (`length`) |
-| Output Correctness | Valid | Valid | Valid (exact match Req 1) |
+| Output Characterization | Step-by-step instructions | Immediate EOS stop (empty string) | Step-by-step instructions (exact match Req 1) |
 | **Condition B: Forced Sharing** | | | |
 | Cache Hit Tokens Delta | **0.0** | **144.0** (cross-hit) | **144.0** (reused) |
 | TTFT (ms) | 60.78 ms | **40.72 ms** | **40.61 ms** |
 | Generation Throughput | 29.24 tok/s | 29.41 tok/s | 29.41 tok/s |
 | Generated Output Tokens | 100 (`length`) | 100 (`length`) | 100 (`length`) |
-| Output Correctness | Valid | **Corrupted (syntax hallucination)** | Altered |
+| Output Characterization | Two-agent dialogue format | Behavioral divergence (coherent instructions in code fence) | Step-by-step instructions (matches Native Req 1/3) |
 
 ### Prefill Latency Reduction
 When prefix caching was achieved (144 of 148 tokens cached in 9 blocks), TTFT dropped from **~60.8 ms** to **~40.7 ms**, a **~33.2% latency reduction (~20.2 ms saved)** in prefill.
+
+### Native Customer Support Validation
+A follow-up validation experiment submitted five identical requests to `customer_support` under native prefix caching:
+- **Reproducible EOS Termination**: All five requests emitted EOS (token ID 2) with approximately **95.1% first-token probability** (`logprob = -0.0503`).
+- **Cache-Hit Consistency**: Same-adapter cache hits (144 cached tokens) consistently preserved this EOS behavior across Requests 2–5 while reducing TTFT from **61.40 ms to ~41.3 ms (~32.8% reduction)**. This proves native EOS is not a cache failure.
+- **Untested Format Hypothesis**: As an untested possibility, the prompt may not match the adapter's expected training format, but prompt formatting has not yet been experimentally evaluated.
 
 ---
 
 ## 6. Correctness Analysis: Why Forced Sharing Fails
 
 ### Mathematical Invalidation
-In multi-head attention adapted by LoRA, the key and value projections for adapter $A$ are:
-$$K^{(A)} = X \left( W_{k,\text{base}} + \frac{\alpha}{r} B_k^{(A)} A_k^{(A)} \right), \quad V^{(A)} = X \left( W_{v,\text{base}} + \frac{\alpha}{r} B_v^{(A)} A_v^{(A)} \right)$$
+In multi-head attention adapted by LoRA on `q_proj` and `v_proj`, the query and value projections for adapter $A$ are:
+$$Q^{(A)} = X \left( W_{q,\text{base}} + \frac{\alpha}{r} B_q^{(A)} A_q^{(A)} \right), \quad V^{(A)} = X \left( W_{v,\text{base}} + \frac{\alpha}{r} B_v^{(A)} A_v^{(A)} \right)$$
+$$K = X W_{k,\text{base}}$$
 
-When switching to adapter $B$, the true keys and values should be $K^{(B)}$ and $V^{(B)}$. Because $B_k^{(A)} A_k^{(A)} \neq B_k^{(B)} A_k^{(B)}$:
-1. Adapter $B$'s queries $Q^{(B)}$ attend directly to $K^{(A)}$.
-2. The attention logits $Q^{(B)} (K^{(A)})^T$ project into an invalid hybrid subspace.
-3. Attention-weighted values $\text{Softmax}(\dots) V^{(A)}$ mix adapter $A$'s semantic representations into adapter $B$'s generation loop.
+When switching to adapter $B$, the true values are $V^{(B)}$. Because $B_v^{(A)} A_v^{(A)} \neq B_v^{(B)} A_v^{(B)}$:
+1. Adapter $B$ attends to cached value representations $V^{(A)}$ computed using adapter $A$.
+2. The attention output $\text{Softmax}\left(\frac{Q^{(B)} K^T}{\sqrt{d_k}}\right) V^{(A)}$ mixes adapter $A$'s value projections into adapter $B$'s computation.
+3. The resulting hidden states are mathematically non-equivalent to an isolated forward pass.
 
 ### Empirical Evidence of Behavioral Drift
-- **Under Native serving**: `customer_support` evaluated the customer query properly and stopped on EOS immediately (1 token).
-- **Under Forced sharing**: Attending to `magicoder`'s cached KV tensors caused `customer_support` to hallucinate a markdown code block:
+- **Under Native serving**: `customer_support` reproducibly evaluates the prompt context and halts on EOS immediately (1 token ID 2, empty string decoded).
+- **Under Forced sharing**: Attending to `magicoder`'s cached KV tensors caused `customer_support` to generate a substantive response: 100 tokens of step-by-step instructions formatted inside a markdown code fence:
   ```text
   ```
   To update your billing address, please follow these steps:
   ...
   ```
-  The model inherited `magicoder`'s code formatting bias despite executing under the `customer_support` adapter.
+  The generated text itself is coherent, grammatically sound English instructions for updating a billing address, meaning forced sharing did not produce semantic corruption or gibberish. However, it exhibits behavioral divergence by bypassing the native EOS termination and adopting code-block formatting inherited from `magicoder`'s KV states.
 
 ---
 
