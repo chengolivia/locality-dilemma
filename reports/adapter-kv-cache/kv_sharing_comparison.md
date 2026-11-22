@@ -13,11 +13,12 @@ In multi-tenant LLM serving with Low-Rank Adaptation (LoRA), prompts frequently 
 2. **TTFT Latency**:
    - Full prefill (148 tokens, 0 cache hits): TTFT was **~60.8–61.0 ms**.
    - Reused prefix (144 cached tokens): TTFT dropped to **~40.6–40.7 ms**, a **~33.2% latency reduction (~20.2 ms saved)** in prefill phase.
-3. **Correctness & Mathematical Validity**:
-   - **Forced cache reuse across adapters produces mathematically invalid attention states.**
-   - In Native serving, `customer_support` evaluated the prompt under its own weights and halted on EOS immediately (1 completion token, finish reason `stop`).
-   - In Forced sharing, `customer_support` read KV tensors computed with `magicoder`'s adapter projection matrices, causing severe behavioral drift: it generated 100 tokens of markdown code block format (`\n\n```\nTo update your billing address...`).
-   - **Crucial conclusion**: A cross-adapter cache hit does *not* imply valid inference. Forced sharing trades mathematical correctness for prefill latency savings.
+3. **Behavioral Divergence & Mathematical Validity**:
+   - **Forced cache reuse across adapters violates mathematical attention isolation.**
+   - In Native serving, `customer_support` evaluated the prompt under its own weights and halted on EOS immediately (1 completion token, finish reason `stop`, yielding an empty string under `skip_special_tokens=True`). A dedicated 5-run validation confirmed this native behavior is 100% reproducible: all five identical requests emitted EOS (token ID 2) with ~95.1% first-token probability, and same-adapter cache hits consistently preserved this behavior while reducing TTFT from 61.40 ms to ~41.3 ms (~32.8%). This confirms native EOS is not a cache failure.
+   - In Forced sharing, `customer_support` read KV tensors computed with `magicoder`'s adapter projection matrices, exhibiting distinct behavioral divergence: instead of terminating at token 1, it produced a substantive response (100 tokens of coherent, helpful step-by-step instructions on updating a billing address, wrapped in a markdown code fence `\n\n```\n...`).
+   - The forced output does not demonstrate semantic corruption (the generated instructions are grammatically sound and relevant), but it does demonstrate behavioral divergence from isolated execution. As an untested hypothesis, the original prompt format may not match the adapter's expected format, but prompt formatting has not yet been isolated or tested.
+   - **Crucial conclusion**: A cross-adapter cache hit does *not* imply mathematically identical inference. Forced sharing trades mathematical isolation for prefill latency savings.
 
 ---
 
@@ -47,10 +48,10 @@ In multi-tenant LLM serving with Low-Rank Adaptation (LoRA), prompts frequently 
   - Max Model Length: 4096 tokens
   - Data Type: `float16` (`--dtype half`)
 - **LoRA Adapter 1**: `magicoder` (`./models/adapters/predibase__magicoder`)
-  - Target modules: `q_proj`, `k_proj`, `v_proj`, `o_proj`
+  - Target modules: `q_proj`, `v_proj`
   - Rank ($r$): 8, Alpha ($\alpha$): 16
 - **LoRA Adapter 2**: `customer_support` (`./models/adapters/predibase__customer_support`)
-  - Target modules: `q_proj`, `k_proj`, `v_proj`, `o_proj`
+  - Target modules: `q_proj`, `v_proj`
   - Rank ($r$): 8, Alpha ($\alpha$): 16
 - **vLLM Serving Arguments**:
   ```bash
@@ -181,6 +182,7 @@ Shared context: The customer has an account with an online retailer. The custome
 ```text
 (empty string - EOS token emitted immediately)
 ```
+*(Validation note: A follow-up validation experiment ran five identical sequential requests to `customer_support` under native vLLM prefix caching. All five requests consistently emitted EOS [token ID 2] with ~95.1% first-token probability [logprob -0.0503]. Requests 2–5 achieved 144 cached-token hits and reduced TTFT from 61.40 ms to ~41.3 ms [~32.8% reduction] while preserving identical EOS termination. Complete raw responses and logprobs are persisted in [`reports/adapter-kv-cache/customer_support_validation.jsonl`](customer_support_validation.jsonl)).*
 
 #### Request 3 (`magicoder`) — Request ID: `cmpl-9f42e4711979766d`
 - **Finish Reason**: `length` (100 tokens generated)
@@ -263,41 +265,58 @@ Shared context: The customer has an account with an online retailer. The custome
 - Prefill time dropped from **60.78 ms** to **40.72 ms** (saving ~20.06 ms).
 
 ### 7.2 Cache Hit vs. Mathematical Correctness
-A fundamental question in LoRA system design is whether cached KV tensors can be shared across adapters. This experiment provides clear empirical and mathematical proof that **forced cross-adapter KV sharing corrupts inference semantics**.
+A fundamental question in LoRA system design is whether cached KV tensors can be shared across adapters. This experiment provides clear empirical and mathematical proof that **forced cross-adapter KV sharing violates mathematical equivalence and induces behavioral divergence**.
 
 #### Mathematical Analysis
-In multi-head attention with LoRA:
-$$K = X \left( W_{k,\text{base}} + \frac{\alpha}{r} B_k^{(A)} A_k^{(A)} \right), \quad V = X \left( W_{v,\text{base}} + \frac{\alpha}{r} B_v^{(A)} A_v^{(A)} \right)$$
+In multi-head attention with LoRA applied to target modules (here, `q_proj` and `v_proj`):
+$$Q = X \left( W_{q,\text{base}} + \frac{\alpha}{r} B_q^{(A)} A_q^{(A)} \right), \quad V = X \left( W_{v,\text{base}} + \frac{\alpha}{r} B_v^{(A)} A_v^{(A)} \right)$$
+$$K = X W_{k,\text{base}}$$
 
 When switching to adapter $B$:
-$$K^{(B)} = X \left( W_{k,\text{base}} + \frac{\alpha}{r} B_k^{(B)} A_k^{(B)} \right) \neq K^{(A)}$$
 $$V^{(B)} = X \left( W_{v,\text{base}} + \frac{\alpha}{r} B_v^{(B)} A_v^{(B)} \right) \neq V^{(A)}$$
+$$Q^{(B)} = X \left( W_{q,\text{base}} + \frac{\alpha}{r} B_q^{(B)} A_q^{(B)} \right) \neq Q^{(A)}$$
 
-Because $B_k^{(A)} A_k^{(A)} \neq B_k^{(B)} A_k^{(B)}$ across distinct task adaptations:
-1. Reusing $K^{(A)}$ and $V^{(A)}$ forces adapter $B$ to attend to key-value representations transformed by adapter $A$.
-2. The attention logits $Q^{(B)} (K^{(A)})^T$ are mathematically corrupt: the queries project in adapter $B$'s subspace while the keys reside in adapter $A$'s subspace.
-3. The resulting attention weights and weighted values are neither adapter $B$ outputs nor base model outputs.
+Because $B_v^{(A)} A_v^{(A)} \neq B_v^{(B)} A_v^{(B)}$ across distinct task adaptations:
+1. Reusing the cached KV states computed under adapter $A$ forces adapter $B$ to attend to value representations $V^{(A)}$ transformed by adapter $A$.
+2. The resulting attention output $\text{Softmax}\left(\frac{Q^{(B)} K^T}{\sqrt{d_k}}\right) V^{(A)}$ mixes adapter $A$'s value projections into adapter $B$'s residual stream.
+3. The computed hidden states are therefore neither mathematically equivalent to adapter $B$'s true forward pass nor to the base model's forward pass.
 
-#### Empirical Evidence
-- Under **Native prefill**, `customer_support` evaluates the prompt context and immediately emits the EOS token (`stop`, 1 token).
-- Under **Forced cross-adapter reuse**, `customer_support` receives the KV states modulated by `magicoder` (a coding assistant adapter). As a direct result of attending to `magicoder`'s KV representations, `customer_support` produces a markdown code fence (`\n\n```\n...`), a syntax hallucination directly induced by `magicoder`'s code-centric bias.
-- Furthermore, within the same condition, `magicoder`'s output in Request 1 (`\n\nAgent 1:\n\n...`) differed from Request 3 (` Instructions:\n\n1. ...`), reflecting cache contamination.
+#### Empirical Evidence & Output Quality
+- Under **Native serving**, `customer_support` evaluates the prompt context under its own weights and immediately halts on the EOS token (`stop`, 1 token ID 2, outputting an empty string under `skip_special_tokens=True`). In a 5-request validation run, this behavior was 100% reproducible: all five requests emitted EOS with ~95.1% probability (logprob -0.0503), and same-adapter cache hits consistently preserved this behavior. This confirms native EOS termination is not a cache failure. As an untested possibility, the original prompt may not match the adapter's expected format (e.g., lacking conversational delimiters), but prompt-format sensitivity has not yet been experimentally isolated.
+- Under **Forced cross-adapter reuse**, `customer_support` receives the KV states modulated by `magicoder` (a coding assistant adapter). Rather than terminating on EOS, `customer_support` generates a substantive response: 100 tokens of coherent, step-by-step instructions for updating a billing address on a retail account:
+  ```text
+  ```
+  To update your billing address, please follow these steps:
+
+  1. Log in to your account on the retailer's website.
+  2. Navigate to the "Account Settings" or "Billing Information" section.
+  3. Locate the "Billing Address" section and click the "Edit" button.
+  4. Enter your updated billing address, including street address, city, state, and zip code.
+  5. Review the
+  ```
+- **Distinguishing Behavioral Divergence from Semantic Corruption**:
+  - The forced output does **not prove semantic corruption**: the text is grammatically fluent, coherent English that directly addresses the customer request. Describing this output as garbled, hallucinated, or corrupted is unsupported by the data.
+  - However, attending to `magicoder`'s cached prefix induces **behavioral divergence**: it suppresses the early EOS stop observed under native weights and wraps the response in a markdown code fence (` ``` `)—a formatting artifact reflecting `magicoder`'s code-centric representations.
+  - Furthermore, in Request 1 vs. Request 3 under Forced mode, `magicoder`'s output shifted from a two-agent dialogue format (`Agent 1:... Agent 2:...`) to numbered instructions (`Instructions: 1. Log in...`), showing that cross-adapter KV cache mutation alters subsequent generation dynamics.
 
 ### 7.3 Conclusion
-Forced KV-cache sharing across different LoRA adapters achieves prefix-cache hits and shortens prefill TTFT by ~33%, but at the expense of invalidating the mathematical guarantees of the model. Systems addressing the LoRA locality dilemma must pursue genuine adapter-aware architectures (e.g., base-model prefix factoring, shared prefix adapters, or locality-aware routing) rather than blind cross-adapter cache reuse.
+Forced KV-cache sharing across different LoRA adapters achieves prefix-cache hits and shortens prefill TTFT by ~33%, but at the expense of invalidating mathematical attention isolation. While the output in this specific test remained grammatically coherent, the generation behavior diverged from isolated execution. Systems addressing the LoRA locality dilemma must pursue mathematically sound architectures (e.g., base-model prefix factoring, shared prefix adapters, or locality-aware routing) rather than unconstrained cross-adapter cache reuse.
 
 ---
 
 ## 8. Artifact Inventory & Reproduction Scripts
 
-- **Experiment Runner**: [`scripts/run_kv_sharing_experiment.py`](file:///home/ubuntu/locality-dilemma/scripts/run_kv_sharing_experiment.py)
+- **Experiment Runner**: [`scripts/run_kv_sharing_experiment.py`](file:///home/ubuntu/locality-dilemma/scripts/run_kv_sharing_experiment.py) (also [`scripts/real/run_kv_sharing_experiment.py`](file:///home/ubuntu/locality-dilemma/scripts/real/run_kv_sharing_experiment.py))
   - Supports `--condition {native,forced}`, `--start-server`, `--output <path>`.
   - Captures Prometheus `/metrics` pre- and post-request, calculates token deltas, records per-request TTFT, ITL, throughput, and token counts.
-- **Patch Manager**: [`scripts/patch_kv_cache.py`](file:///home/ubuntu/locality-dilemma/scripts/patch_kv_cache.py)
+- **Validation Runner**: [`scripts/real/validate_customer_support.py`](file:///home/ubuntu/locality-dilemma/scripts/real/validate_customer_support.py)
+  - Submits 5 sequential requests under native caching; records decoded text, token IDs, logprobs, and TTFT.
+- **Patch Manager**: [`scripts/patch_kv_cache.py`](file:///home/ubuntu/locality-dilemma/scripts/patch_kv_cache.py) (also [`scripts/real/patch_kv_cache.py`](file:///home/ubuntu/locality-dilemma/scripts/real/patch_kv_cache.py))
   - Supports `--status`, `--restore` (native), and `--forced` (patch).
 - **Raw Measurements**:
-  - Native Condition: [`reports/kv_sharing_native.jsonl`](file:///home/ubuntu/locality-dilemma/reports/kv_sharing_native.jsonl)
-  - Forced Sharing Condition: [`reports/kv_sharing_forced.jsonl`](file:///home/ubuntu/locality-dilemma/reports/kv_sharing_forced.jsonl)
+  - Native Condition: [`reports/adapter-kv-cache/kv_sharing_native.jsonl`](file:///home/ubuntu/locality-dilemma/reports/adapter-kv-cache/kv_sharing_native.jsonl)
+  - Forced Sharing Condition: [`reports/adapter-kv-cache/kv_sharing_forced.jsonl`](file:///home/ubuntu/locality-dilemma/reports/adapter-kv-cache/kv_sharing_forced.jsonl)
+  - Customer Support Validation: [`reports/adapter-kv-cache/customer_support_validation.jsonl`](file:///home/ubuntu/locality-dilemma/reports/adapter-kv-cache/customer_support_validation.jsonl)
 - **Current System Status**:
   - `kv_cache_utils.py`: **Restored to NATIVE implementation**.
   - Backup file `kv_cache_utils.py.bak`: Created and validated with native implementation.
